@@ -616,11 +616,11 @@ function generateWhatsAppUrl(customerName, customerPhone, address, items, total)
     const variant = item.color || '';
     const size = item.size || '';
     const details = [variant, size].filter(Boolean).join(', ');
-    return `${i + 1}. ${item.name}${details ? ' (' + details + ')' : ''} \u00d7 ${item.qty} \u2014 ${formatPrice(item.price * item.qty)}`;
+    return `${i + 1}. ${item.name}${details ? ' (' + details + ')' : ''} x ${item.qty} - ${formatPrice(item.price * item.qty)}`;
   }).join('\n');
 
   const message = [
-    '\ud83d\uded2 *New Order \u2014 Fold*',
+    '*New Order - Fold*',
     '',
     `*Customer:* ${customerName}`,
     `*Phone:* ${customerPhone}`,
@@ -635,6 +635,21 @@ function generateWhatsAppUrl(customerName, customerPhone, address, items, total)
   ].join('\n');
 
   return `https://web.whatsapp.com/send?phone=${WHATSAPP_NUMBER}&text=${encodeURIComponent(message)}`;
+}
+
+function openWhatsApp(waUrl) {
+  const isMobile = /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini|Windows Phone/i.test(navigator.userAgent);
+  if (isMobile) {
+    window.open(waUrl, '_blank');
+  } else {
+    const link = document.createElement('a');
+    link.href = waUrl;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
 }
 
 // ==================== 5. PAGE-SPECIFIC INIT ====================
@@ -875,7 +890,7 @@ function initCheckoutPage() {
     const orderId = generateOrderId();
     const confirmationUrl = `confirmation.html?order=${encodeURIComponent(orderId)}&total=${total}`;
 
-    window.open(waUrl, '_blank');
+    openWhatsApp(waUrl);
     Cart.clear();
     window.location.href = confirmationUrl;
   });
