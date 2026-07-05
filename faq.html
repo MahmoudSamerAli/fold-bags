@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FAQ — Fold</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="index.html" class="logo">Fold</a>
+      <nav class="main-nav">
+        <a href="index.html">Home</a>
+        <a href="shop.html">Shop</a>
+        <a href="about.html">About</a>
+        <a href="contact.html">Contact</a>
+        <a href="faq.html">FAQ</a>
+      </nav>
+      <div class="header-actions">
+        <button class="cart-btn" id="cart-btn" aria-label="Open cart">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+          </svg>
+          <span class="cart-badge" id="cart-badge">0</span>
+        </button>
+        <button class="hamburger" id="hamburger" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="mobile-nav" id="mobile-nav">
+    <a href="index.html">Home</a>
+    <a href="shop.html">Shop</a>
+    <a href="about.html">About</a>
+    <a href="contact.html">Contact</a>
+    <a href="faq.html">FAQ</a>
+  </div>
+
+  <div class="cart-overlay" id="cart-overlay"></div>
+  <div class="cart-drawer" id="cart-drawer">
+    <div class="cart-drawer-header">
+      <h3>Your Cart</h3>
+      <button class="cart-close" id="cart-close" aria-label="Close cart">&times;</button>
+    </div>
+    <div class="cart-drawer-items" id="cart-drawer-items"></div>
+    <div class="cart-drawer-footer">
+      <div class="cart-drawer-total">
+        <span>Total</span>
+        <span id="cart-drawer-total">0 EGP</span>
+      </div>
+      <a href="cart.html" class="btn btn-outline btn-block btn-sm">View Cart</a>
+      <a href="checkout.html" class="btn btn-primary btn-block btn-sm">Checkout</a>
+    </div>
+  </div>
+
+  <section class="page-header">
+    <div class="container">
+      <p class="section-subtitle">Questions?</p>
+      <h1>Frequently Asked Questions</h1>
+      <p>Everything you need to know</p>
+    </div>
+  </section>
+
+  <section class="page-content">
+    <div class="container">
+      <div class="faq-list">
+        <div class="faq-item active">
+          <div class="faq-question">
+            <span>How do I place an order?</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+          </div>
+          <div class="faq-answer">
+            <p>Simply browse our collection, add your favorite items to the cart, and proceed to checkout. Fill in your name, phone number, and delivery address, then click "Place Order" — your order will be sent to us via WhatsApp and we'll confirm it shortly.</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">
+            <span>What payment methods do you accept?</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+          </div>
+          <div class="faq-answer">
+            <p>Payment is handled directly via WhatsApp after your order is placed. We accept bank transfer, InstaPay, and cash on delivery (within Cairo). We'll discuss the payment method with you when confirming your order.</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">
+            <span>How long does delivery take?</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+          </div>
+          <div class="faq-answer">
+            <p>Delivery typically takes 3–7 business days within Egypt, depending on your location. We'll provide a more accurate timeline when we confirm your order via WhatsApp.</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">
+            <span>Do you ship internationally?</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+          </div>
+          <div class="faq-answer">
+            <p>Currently we ship within Egypt only. International shipping will be available soon — follow us on social media for updates.</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">
+            <span>What is your return policy?</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+          </div>
+          <div class="faq-answer">
+            <p>We offer a 7-day return policy for unused items in their original packaging. If you're not satisfied with your purchase, contact us via WhatsApp and we'll arrange a return or exchange.</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">
+            <span>How do I choose the right size?</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+          </div>
+          <div class="faq-answer">
+            <p>Each product page includes size options (S, M, L) and detailed descriptions. If you're unsure, feel free to reach out via WhatsApp — we're happy to help you find the perfect fit.</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">
+            <span>Are your products authentic?</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+          </div>
+          <div class="faq-answer">
+            <p>Absolutely. Every Fold bag is designed in-house and crafted with care using quality materials. We stand behind the authenticity and quality of every piece we sell.</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">
+            <span>How do I care for my bag?</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+          </div>
+          <div class="faq-answer">
+            <p>For leather bags, wipe with a dry cloth and condition occasionally. For canvas and cotton, spot clean with mild soap and water. Store in a cool, dry place away from direct sunlight. Each bag comes with a care card for specific instructions.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <h4>Fold</h4>
+          <p>Minimal bags for the modern journey. Thoughtfully designed, built to last.</p>
+        </div>
+        <div class="footer-col">
+          <h5>Shop</h5>
+          <a href="shop.html">All Products</a>
+          <a href="shop.html?category=backpacks">Backpacks</a>
+          <a href="shop.html?category=totes">Tote Bags</a>
+          <a href="shop.html?category=crossbody">Crossbody Bags</a>
+          <a href="shop.html?category=clutches">Clutches</a>
+          <a href="shop.html?category=duffles">Duffle Bags</a>
+        </div>
+        <div class="footer-col">
+          <h5>Company</h5>
+          <a href="about.html">About Us</a>
+          <a href="contact.html">Contact</a>
+          <a href="faq.html">FAQ</a>
+        </div>
+        <div class="footer-col">
+          <h5>Contact</h5>
+          <p>+20 102 799 3246</p>
+          <p>hello@fold-eg.com</p>
+          <p>Cairo, Egypt</p>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2026 Fold. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

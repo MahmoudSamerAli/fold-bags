@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkout — Fold</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="index.html" class="logo">Fold</a>
+      <nav class="main-nav">
+        <a href="index.html">Home</a>
+        <a href="shop.html">Shop</a>
+        <a href="about.html">About</a>
+        <a href="contact.html">Contact</a>
+        <a href="faq.html">FAQ</a>
+      </nav>
+      <div class="header-actions">
+        <button class="cart-btn" id="cart-btn" aria-label="Open cart">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+          </svg>
+          <span class="cart-badge" id="cart-badge">0</span>
+        </button>
+        <button class="hamburger" id="hamburger" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="mobile-nav" id="mobile-nav">
+    <a href="index.html">Home</a>
+    <a href="shop.html">Shop</a>
+    <a href="about.html">About</a>
+    <a href="contact.html">Contact</a>
+    <a href="faq.html">FAQ</a>
+  </div>
+
+  <div class="cart-overlay" id="cart-overlay"></div>
+  <div class="cart-drawer" id="cart-drawer">
+    <div class="cart-drawer-header">
+      <h3>Your Cart</h3>
+      <button class="cart-close" id="cart-close" aria-label="Close cart">&times;</button>
+    </div>
+    <div class="cart-drawer-items" id="cart-drawer-items"></div>
+    <div class="cart-drawer-footer">
+      <div class="cart-drawer-total">
+        <span>Total</span>
+        <span id="cart-drawer-total">0 EGP</span>
+      </div>
+      <a href="cart.html" class="btn btn-outline btn-block btn-sm">View Cart</a>
+      <a href="checkout.html" class="btn btn-primary btn-block btn-sm">Checkout</a>
+    </div>
+  </div>
+
+  <section class="page-header">
+    <div class="container">
+      <p class="section-subtitle">Almost There</p>
+      <h1>Checkout</h1>
+      <p>Your order will be sent via WhatsApp for confirmation</p>
+    </div>
+  </section>
+
+  <section class="checkout-page">
+    <div class="container">
+      <div class="checkout-layout">
+        <div class="checkout-form">
+          <h2>Shipping Details</h2>
+          <form id="checkout-form" novalidate>
+            <div class="form-group">
+              <label for="cust-name">Full Name</label>
+              <input type="text" id="cust-name" placeholder="Enter your full name" required>
+              <span class="error-text">Please enter your name</span>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="cust-phone">Phone Number</label>
+                <input type="tel" id="cust-phone" placeholder="e.g. +20 10X XXX XXXX" required>
+                <span class="error-text">Please enter your phone number</span>
+              </div>
+              <div class="form-group">
+                <label for="cust-city">City</label>
+                <input type="text" id="cust-city" placeholder="Enter your city">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="cust-address">Delivery Address</label>
+              <textarea id="cust-address" placeholder="Street, building, apartment number..." required></textarea>
+              <span class="error-text">Please enter your address</span>
+            </div>
+
+            <h2 style="margin-top: 2rem;">Payment</h2>
+            <p style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 1.5rem;">
+              Payment will be handled directly via WhatsApp after your order is confirmed.
+            </p>
+
+            <button type="submit" class="btn btn-primary btn-block" id="place-order-btn">
+              Place Order — <span id="checkout-total-display">0 EGP</span>
+            </button>
+            <p style="font-size: 0.75rem; color: var(--text-light); margin-top: 0.75rem; text-align: center;">
+              By placing this order, you agree to our <a href="faq.html" style="text-decoration: underline;">terms & conditions</a>.
+            </p>
+          </form>
+        </div>
+
+        <div class="checkout-summary">
+          <h3>Order Summary</h3>
+          <div id="checkout-summary-items"></div>
+          <div style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--border);">
+            <div class="cart-summary-row">
+              <span>Subtotal</span>
+              <span id="checkout-subtotal">0 EGP</span>
+            </div>
+            <div class="cart-summary-row">
+              <span>Shipping</span>
+              <span id="checkout-shipping">—</span>
+            </div>
+            <div class="cart-summary-row total">
+              <span>Total</span>
+              <span id="checkout-total">0 EGP</span>
+            </div>
+            <p style="font-size: 0.75rem; color: var(--text-light); margin-top: 0.5rem;">Free shipping on orders over 1,000 EGP</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <h4>Fold</h4>
+          <p>Minimal bags for the modern journey. Thoughtfully designed, built to last.</p>
+        </div>
+        <div class="footer-col">
+          <h5>Shop</h5>
+          <a href="shop.html">All Products</a>
+          <a href="shop.html?category=backpacks">Backpacks</a>
+          <a href="shop.html?category=totes">Tote Bags</a>
+          <a href="shop.html?category=crossbody">Crossbody Bags</a>
+          <a href="shop.html?category=clutches">Clutches</a>
+          <a href="shop.html?category=duffles">Duffle Bags</a>
+        </div>
+        <div class="footer-col">
+          <h5>Company</h5>
+          <a href="about.html">About Us</a>
+          <a href="contact.html">Contact</a>
+          <a href="faq.html">FAQ</a>
+        </div>
+        <div class="footer-col">
+          <h5>Contact</h5>
+          <p>+20 102 799 3246</p>
+          <p>hello@fold-eg.com</p>
+          <p>Cairo, Egypt</p>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2026 Fold. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const totalDisplay = document.getElementById('checkout-total-display');
+      const updateTotal = () => {
+        const total = Cart.getTotal();
+        if (totalDisplay) totalDisplay.textContent = formatPrice(total);
+      };
+      updateTotal();
+      document.addEventListener('cart-updated', updateTotal);
+    });
+  </script>
+</body>
+</html>

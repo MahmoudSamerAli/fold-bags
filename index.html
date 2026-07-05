@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fold — Minimal Bags</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="index.html" class="logo">Fold</a>
+      <nav class="main-nav">
+        <a href="index.html">Home</a>
+        <a href="shop.html">Shop</a>
+        <a href="about.html">About</a>
+        <a href="contact.html">Contact</a>
+        <a href="faq.html">FAQ</a>
+      </nav>
+      <div class="header-actions">
+        <button class="cart-btn" id="cart-btn" aria-label="Open cart">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+          </svg>
+          <span class="cart-badge" id="cart-badge">0</span>
+        </button>
+        <button class="hamburger" id="hamburger" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile Nav -->
+  <div class="mobile-nav" id="mobile-nav">
+    <a href="index.html">Home</a>
+    <a href="shop.html">Shop</a>
+    <a href="about.html">About</a>
+    <a href="contact.html">Contact</a>
+    <a href="faq.html">FAQ</a>
+  </div>
+
+  <!-- Cart Overlay & Drawer -->
+  <div class="cart-overlay" id="cart-overlay"></div>
+  <div class="cart-drawer" id="cart-drawer">
+    <div class="cart-drawer-header">
+      <h3>Your Cart</h3>
+      <button class="cart-close" id="cart-close" aria-label="Close cart">&times;</button>
+    </div>
+    <div class="cart-drawer-items" id="cart-drawer-items"></div>
+    <div class="cart-drawer-footer">
+      <div class="cart-drawer-total">
+        <span>Total</span>
+        <span id="cart-drawer-total">0 EGP</span>
+      </div>
+      <a href="cart.html" class="btn btn-outline btn-block btn-sm">View Cart</a>
+      <a href="checkout.html" class="btn btn-primary btn-block btn-sm">Checkout</a>
+    </div>
+  </div>
+
+  <!-- Hero -->
+  <section class="hero" style="background-image: linear-gradient(135deg, rgba(45,45,45,0.65), rgba(45,45,45,0.3)), url('https://picsum.photos/seed/fold-hero/1600/900');">
+    <div class="hero-content">
+      <h1>Carry What Matters</h1>
+      <p>Minimal bags crafted for the modern journey. Clean lines, natural materials, timeless design.</p>
+      <a href="shop.html" class="btn btn-outline-light">Shop the Collection</a>
+    </div>
+  </section>
+
+  <!-- Featured Products -->
+  <section class="section">
+    <div class="container">
+      <div class="section-header">
+        <p class="section-subtitle">Featured</p>
+        <h2>New Arrivals</h2>
+        <p>Handpicked pieces for this season</p>
+      </div>
+      <div class="product-grid" id="featured-grid"></div>
+      <div class="text-center mt-4">
+        <a href="shop.html" class="btn btn-outline">View All Products</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Categories -->
+  <section class="section section-alt">
+    <div class="container">
+      <div class="section-header">
+        <p class="section-subtitle">Browse</p>
+        <h2>Shop by Category</h2>
+        <p>Find your perfect style</p>
+      </div>
+      <div class="category-grid" id="category-grid"></div>
+    </div>
+  </section>
+
+  <!-- Brand Story -->
+  <section class="section">
+    <div class="container">
+      <div class="section-header">
+        <p class="section-subtitle">Our Story</p>
+        <h2>Designed for Life</h2>
+        <p>Every Fold bag is built with intention — quality materials, thoughtful details, and a silhouette that moves with you.</p>
+      </div>
+      <div class="text-center">
+        <a href="about.html" class="btn btn-outline">Learn More</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact Section -->
+  <section class="section section-alt">
+    <div class="container">
+      <div class="section-header">
+        <p class="section-subtitle">Get in Touch</p>
+        <h2>We're Here to Help</h2>
+        <p>Questions about sizing, shipping, or your order? Reach out anytime.</p>
+      </div>
+      <div class="text-center">
+        <p style="color: var(--text-light); margin-bottom: 0.5rem;">+20 102 799 3246</p>
+        <p style="color: var(--text-light); margin-bottom: 2rem;">hello@fold-eg.com</p>
+        <a href="contact.html" class="btn btn-outline">Contact Us</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <h4>Fold</h4>
+          <p>Minimal bags for the modern journey. Thoughtfully designed, built to last.</p>
+        </div>
+        <div class="footer-col">
+          <h5>Shop</h5>
+          <a href="shop.html">All Products</a>
+          <a href="shop.html?category=backpacks">Backpacks</a>
+          <a href="shop.html?category=totes">Tote Bags</a>
+          <a href="shop.html?category=crossbody">Crossbody Bags</a>
+          <a href="shop.html?category=clutches">Clutches</a>
+          <a href="shop.html?category=duffles">Duffle Bags</a>
+        </div>
+        <div class="footer-col">
+          <h5>Company</h5>
+          <a href="about.html">About Us</a>
+          <a href="contact.html">Contact</a>
+          <a href="faq.html">FAQ</a>
+        </div>
+        <div class="footer-col">
+          <h5>Contact</h5>
+          <p>+20 102 799 3246</p>
+          <p>hello@fold-eg.com</p>
+          <p>Cairo, Egypt</p>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2026 Fold. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const featured = products.slice(0, 6);
+      renderProductCards(featured, document.getElementById('featured-grid'));
+
+      const categories = [
+        { name: 'Backpacks', slug: 'backpacks', img: 'https://picsum.photos/seed/cat-backpacks/400/400' },
+        { name: 'Tote Bags', slug: 'totes', img: 'https://picsum.photos/seed/cat-totes/400/400' },
+        { name: 'Crossbody', slug: 'crossbody', img: 'https://picsum.photos/seed/cat-crossbody/400/400' },
+        { name: 'Clutches', slug: 'clutches', img: 'https://picsum.photos/seed/cat-clutches/400/400' },
+        { name: 'Duffles', slug: 'duffles', img: 'https://picsum.photos/seed/cat-duffles/400/400' }
+      ];
+
+      const catGrid = document.getElementById('category-grid');
+      catGrid.innerHTML = categories.map(cat => {
+        const count = products.filter(p => p.category === cat.slug).length;
+        return `
+          <a href="shop.html?category=${cat.slug}" class="category-card">
+            <img src="${cat.img}" alt="${cat.name}" loading="lazy">
+            <div class="category-card-overlay">
+              <div class="category-card-title">${cat.name}</div>
+              <div class="category-card-count">${count} Products</div>
+            </div>
+          </a>
+        `;
+      }).join('');
+    });
+  </script>
+</body>
+</html>
