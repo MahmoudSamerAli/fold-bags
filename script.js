@@ -634,7 +634,7 @@ function generateWhatsAppUrl(customerName, customerPhone, address, items, total)
     `*Total:* ${formatPrice(total)}`
   ].join('\n');
 
-  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+  return `https://web.whatsapp.com/send?phone=${WHATSAPP_NUMBER}&text=${encodeURIComponent(message)}`;
 }
 
 // ==================== 5. PAGE-SPECIFIC INIT ====================
