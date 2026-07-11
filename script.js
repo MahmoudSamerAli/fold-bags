@@ -369,7 +369,7 @@ const WHATSAPP_NUMBER = '201027993246';
 const INSTAPAY_PHONE = '01X XXX XXX XX';
 const INSTAPAY_NAME = 'Your Name Here';
 
-function generateWhatsAppUrl(customerName, customerPhone, address, items, total, paymentMethod) {
+function generateWhatsAppUrl(customerName, customerPhone, address, city, items, total, paymentMethod) {
   const itemLines = items.map((item, i) => {
     const variant = item.color || '';
     const size = item.size || '';
@@ -377,12 +377,14 @@ function generateWhatsAppUrl(customerName, customerPhone, address, items, total,
     return `${i + 1}. ${item.name}${details ? ' (' + details + ')' : ''} x ${item.qty} - ${formatPrice(item.price * item.qty)}`;
   }).join('\n');
 
+  const fullAddress = address + (city ? ', ' + city : '');
+
   const message = [
     '*New Order - Fold*',
     '',
     `*Customer:* ${customerName}`,
     `*Phone:* ${customerPhone}`,
-    `*Address:* ${address}`,
+    `*Address:* ${fullAddress}`,
     `*Payment:* ${paymentMethod === 'instapay' ? 'InstaPay' : 'Cash on Delivery'}`,
     '',
     '*Items:*',
@@ -671,6 +673,7 @@ function initProductPage() {
 function initCheckoutPage() {
   const form = document.getElementById('checkout-form');
   const submitBtn = document.getElementById('place-order-btn');
+  const totalDisplay = document.getElementById('checkout-total-display');
   if (!form) return;
 
   Cart.renderCheckoutSummary();
@@ -678,10 +681,16 @@ function initCheckoutPage() {
   form.addEventListener('submit', (e) => {
     e.preventDefault();
 
+    const submitBtn = document.getElementById('place-order-btn');
+    if (submitBtn.disabled) return;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Placing Order...';
+
     let valid = true;
 
     const name = document.getElementById('cust-name');
     const phone = document.getElementById('cust-phone');
+    const city = document.getElementById('cust-city');
     const address = document.getElementById('cust-address');
 
     [name, phone, address].forEach(el => el.closest('.form-group').classList.remove('error'));
@@ -691,8 +700,10 @@ function initCheckoutPage() {
       valid = false;
     }
 
-    if (!phone.value.trim()) {
+    const phonePattern = /^(?:\+20|0)?1[0-9]{9}$/;
+    if (!phonePattern.test(phone.value.trim())) {
       phone.closest('.form-group').classList.add('error');
+      phone.closest('.form-group').querySelector('.error-text').textContent = 'Enter a valid Egyptian phone number';
       valid = false;
     }
 
@@ -701,11 +712,17 @@ function initCheckoutPage() {
       valid = false;
     }
 
-    if (!valid) return;
+    if (!valid) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Place Order — ' + totalDisplay.textContent;
+      return;
+    }
 
     const items = Cart.getItems();
     if (items.length === 0) {
       Cart.showToast('Your cart is empty');
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Place Order — ' + totalDisplay.textContent;
       return;
     }
 
@@ -713,20 +730,29 @@ function initCheckoutPage() {
     const paymentMethod = paymentEl ? paymentEl.value : 'cod';
 
     const total = Cart.getTotal();
+    const cityVal = city.value.trim();
     const waUrl = generateWhatsAppUrl(
       name.value.trim(),
       phone.value.trim(),
       address.value.trim(),
+      cityVal,
       items,
       total,
       paymentMethod
     );
 
     const orderId = generateOrderId();
-    const confirmationUrl = `confirmation.html?order=${encodeURIComponent(orderId)}&total=${total}&payment=${paymentMethod}`;
+    const confirmationUrl = `confirmation.html?order=${encodeURIComponent(orderId)}&total=${total}&payment=${paymentMethod}${cityVal ? '&city=' + encodeURIComponent(cityVal) : ''}`;
 
-    openWhatsApp(waUrl);
+    sessionStorage.setItem('fold_last_order', JSON.stringify({
+      items: items,
+      total: total,
+      payment: paymentMethod,
+      city: cityVal
+    }));
+
     Cart.clear();
+    openWhatsApp(waUrl);
     window.location.href = confirmationUrl;
   });
 }
@@ -740,7 +766,9 @@ function initConfirmationPage() {
   const total = params.get('total');
   const payment = params.get('payment');
 
-  const items = Cart.getItems();
+  const saved = JSON.parse(sessionStorage.getItem('fold_last_order') || '{}');
+  const items = saved.items || Cart.getItems();
+  sessionStorage.removeItem('fold_last_order');
 
   let paymentHtml = '';
   if (payment === 'instapay') {
@@ -808,8 +836,14 @@ function initContactForm() {
 
   form.addEventListener('submit', (e) => {
     e.preventDefault();
-    const msg = 'Thank you! We\u2019ll get back to you soon.';
-    Cart.showToast(msg);
+    const name = document.getElementById('contact-name').value.trim();
+    const email = document.getElementById('contact-email').value.trim();
+    const message = document.getElementById('contact-message').value.trim();
+
+    const text = `*New Inquiry - Fold*\n\n*Name:* ${name || 'Not provided'}\n*Email:* ${email || 'Not provided'}\n*Message:* ${message || 'Not provided'}`;
+    const waUrl = `https://web.whatsapp.com/send?phone=${WHATSAPP_NUMBER}&text=${encodeURIComponent(text)}`;
+    openWhatsApp(waUrl);
+    Cart.showToast('Message sent via WhatsApp!');
     form.reset();
   });
 }
