@@ -3,7 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Fold — Minimal Bags</title>
+  <title>Fold — Minimal Bags | Handcrafted Leather & Canvas Bags</title>
+  <meta name="description" content="Fold offers handcrafted minimal bags — backpacks, totes, crossbody bags, clutches, and duffles. Quality materials, timeless design, built to last.">
+  <meta name="keywords" content="bags, leather bags, canvas bags, backpacks, tote bags, crossbody bags, clutches, duffle bags, Egypt, handcrafted">
+  <meta name="robots" content="index, follow">
+  <meta property="og:title" content="Fold — Minimal Bags">
+  <meta property="og:description" content="Handcrafted minimal bags for the modern journey. Quality materials, timeless design.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://fold-eg.com">
+  <meta property="og:image" content="https://picsum.photos/seed/fold-og/1200/630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://fold-eg.com">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -158,6 +168,19 @@
           <p>hello@fold-eg.com</p>
           <p>Cairo, Egypt</p>
         </div>
+        <div class="footer-col">
+          <h5>Follow</h5>
+          <a href="#" target="_blank" rel="noopener">Instagram</a>
+          <a href="#" target="_blank" rel="noopener">Facebook</a>
+          <a href="#" target="_blank" rel="noopener">Pinterest</a>
+        </div>
+        <div class="footer-col footer-newsletter">
+          <h5>Stay in Touch</h5>
+          <form class="newsletter-form" id="newsletter-form">
+            <input type="email" placeholder="Your email" required>
+            <button type="submit" class="btn btn-primary btn-sm">Subscribe</button>
+          </form>
+        </div>
       </div>
       <div class="footer-bottom">
         <p>&copy; 2026 Fold. All rights reserved.</p>
@@ -169,8 +192,10 @@
   <script src="script.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
+      const featuredGrid = document.getElementById('featured-grid');
+      renderSkeletonGrid(featuredGrid, 6);
       const featured = products.slice(0, 6);
-      renderProductCards(featured, document.getElementById('featured-grid'));
+      requestAnimationFrame(() => renderProductCards(featured, featuredGrid));
 
       const categories = [
         { name: 'Backpacks', slug: 'backpacks', img: 'https://picsum.photos/seed/cat-backpacks/400/400' },

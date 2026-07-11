@@ -60,6 +60,11 @@
     </div>
   </div>
 
+  <div class="lightbox" id="lightbox" onclick="closeLightbox()">
+    <button class="lightbox-close">&times;</button>
+    <img src="" alt="" id="lightbox-img">
+  </div>
+
   <div class="container">
     <div class="product-detail" id="product-detail"></div>
   </div>
@@ -103,6 +108,19 @@
           <p>hello@fold-eg.com</p>
           <p>Cairo, Egypt</p>
         </div>
+        <div class="footer-col">
+          <h5>Follow</h5>
+          <a href="#" target="_blank" rel="noopener">Instagram</a>
+          <a href="#" target="_blank" rel="noopener">Facebook</a>
+          <a href="#" target="_blank" rel="noopener">Pinterest</a>
+        </div>
+        <div class="footer-col footer-newsletter">
+          <h5>Stay in Touch</h5>
+          <form class="newsletter-form" id="newsletter-form">
+            <input type="email" placeholder="Your email" required>
+            <button type="submit" class="btn btn-primary btn-sm">Subscribe</button>
+          </form>
+        </div>
       </div>
       <div class="footer-bottom">
         <p>&copy; 2026 Fold. All rights reserved.</p>
@@ -118,11 +136,13 @@
       const productId = params.get('id');
       const product = getProductById(productId);
 
+      const relatedGrid = document.getElementById('related-grid');
+      renderSkeletonGrid(relatedGrid, 4);
       if (product) {
         const related = products
           .filter(p => p.category === product.category && p.id !== product.id)
           .slice(0, 4);
-        renderProductCards(related, document.getElementById('related-grid'));
+        requestAnimationFrame(() => renderProductCards(related, relatedGrid));
       }
     });
   </script>

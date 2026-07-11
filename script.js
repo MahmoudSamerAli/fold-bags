@@ -1,6 +1,7 @@
 /* ==========================================
    FOLD — Main JavaScript
    ========================================== */
+'use strict';
 
 // ==================== 1. CART MODULE ====================
 
@@ -16,6 +17,7 @@ const Cart = {
   saveItems(items) {
     localStorage.setItem('fold_cart', JSON.stringify(items));
     this.updateUI();
+    document.dispatchEvent(new CustomEvent('cart-updated'));
   },
 
   add(product, color, size, qty = 1) {
@@ -244,6 +246,45 @@ const Cart = {
   }
 };
 
+// ==================== 2. WISHLIST MODULE ====================
+
+const Wishlist = {
+  getItems() {
+    try {
+      return JSON.parse(localStorage.getItem('fold_wishlist')) || [];
+    } catch {
+      return [];
+    }
+  },
+
+  saveItems(items) {
+    localStorage.setItem('fold_wishlist', JSON.stringify(items));
+  },
+
+  toggle(productId) {
+    let items = this.getItems();
+    const idx = items.indexOf(productId);
+    if (idx > -1) {
+      items.splice(idx, 1);
+    } else {
+      items.push(productId);
+    }
+    this.saveItems(items);
+    this.updateUI(productId);
+    return idx === -1;
+  },
+
+  has(productId) {
+    return this.getItems().includes(productId);
+  },
+
+  updateUI(productId) {
+    document.querySelectorAll(`.wishlist-btn[data-id="${productId}"]`).forEach(btn => {
+      btn.classList.toggle('active', this.has(productId));
+    });
+  }
+};
+
 // ==================== 3. UI HELPERS ====================
 
 function formatPrice(price) {
@@ -259,12 +300,37 @@ function getProductsByCategory(category) {
   return products.filter(p => p.category === category);
 }
 
+function renderSkeletonGrid(container, count = 6) {
+  if (!container) return;
+  container.innerHTML = '<div class="skeleton-grid">' + Array.from({ length: count }, () => `
+    <div class="skeleton-card">
+      <div class="skeleton-card-image"></div>
+      <div class="skeleton-card-body">
+        <div class="skeleton-line shorter"></div>
+        <div class="skeleton-line"></div>
+        <div class="skeleton-line short"></div>
+      </div>
+    </div>
+  `).join('') + '</div>';
+}
+
 function renderProductCards(productsArr, container) {
   if (!container) return '';
-  container.innerHTML = productsArr.map(p => `
+  const wishlistedIds = Wishlist.getItems();
+
+  container.innerHTML = productsArr.map(p => {
+    const isWishlisted = wishlistedIds.includes(p.id);
+    return `
     <div class="product-card" onclick="window.location.href='product.html?id=${p.id}'">
       <div class="product-card-image">
         <img src="${p.image}" alt="${p.name}" loading="lazy">
+        <button class="wishlist-btn${isWishlisted ? ' active' : ''}" data-id="${p.id}"
+          onclick="event.stopPropagation(); Wishlist.toggle(${p.id})"
+          aria-label="Add to wishlist">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="${isWishlisted ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+        </button>
         <button class="btn btn-primary btn-sm add-to-cart-btn" 
           onclick="event.stopPropagation(); quickAdd(${p.id})"
           data-id="${p.id}">
@@ -277,7 +343,7 @@ function renderProductCards(productsArr, container) {
         <div class="product-card-price">${formatPrice(p.price)}</div>
       </div>
     </div>
-  `).join('');
+  `}).join('');
 }
 
 function quickAdd(productId) {
@@ -342,11 +408,34 @@ function openWhatsApp(waUrl) {
   }
 }
 
-// ==================== 5. PAGE-SPECIFIC INIT ====================
+// ==================== 5. LIGHTBOX ====================
+
+function openLightbox(src) {
+  const lb = document.getElementById('lightbox');
+  const img = document.getElementById('lightbox-img');
+  if (!lb || !img) return;
+  img.src = src;
+  lb.classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeLightbox() {
+  const lb = document.getElementById('lightbox');
+  if (!lb) return;
+  lb.classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeLightbox();
+});
+
+// ==================== 6. PAGE-SPECIFIC INIT ====================
 
 function initShopPage() {
   const grid = document.getElementById('shop-grid');
   const search = document.getElementById('filter-search');
+  const sortSelect = document.getElementById('filter-sort');
   const categoryBtns = document.querySelectorAll('.filter-categories .filter-btn');
   const priceBtns = document.querySelectorAll('.filter-prices .filter-btn');
   if (!grid) return;
@@ -354,9 +443,17 @@ function initShopPage() {
   let activeCategory = 'all';
   let activePriceRange = null;
   let searchQuery = '';
+  let sortBy = 'default';
+
+  // Read URL params on load
+  const params = new URLSearchParams(window.location.search);
+  const urlCategory = params.get('category');
+  if (urlCategory) {
+    activeCategory = urlCategory;
+  }
 
   function filterProducts() {
-    let filtered = products;
+    let filtered = [...products];
 
     if (activeCategory !== 'all') {
       filtered = filtered.filter(p => p.category === activeCategory);
@@ -376,11 +473,43 @@ function initShopPage() {
       );
     }
 
+    // Sort
+    switch (sortBy) {
+      case 'price-asc':
+        filtered.sort((a, b) => a.price - b.price);
+        break;
+      case 'price-desc':
+        filtered.sort((a, b) => b.price - a.price);
+        break;
+      case 'name-asc':
+        filtered.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case 'name-desc':
+        filtered.sort((a, b) => b.name.localeCompare(a.name));
+        break;
+    }
+
     renderProductCards(filtered, grid);
+  }
+
+  // Activate URL category button
+  if (urlCategory) {
+    categoryBtns.forEach(btn => {
+      if (btn.dataset.category === urlCategory) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
   }
 
   search.addEventListener('input', (e) => {
     searchQuery = e.target.value;
+    filterProducts();
+  });
+
+  sortSelect.addEventListener('change', (e) => {
+    sortBy = e.target.value;
     filterProducts();
   });
 
@@ -410,7 +539,9 @@ function initShopPage() {
     });
   });
 
-  filterProducts();
+  // Show skeleton, then render with a tiny delay so it shows
+  renderSkeletonGrid(grid);
+  requestAnimationFrame(() => filterProducts());
 }
 
 function initProductPage() {
@@ -445,7 +576,7 @@ function initProductPage() {
 
     container.innerHTML = `
       <div class="product-images">
-        <div class="product-main-image">
+        <div class="product-main-image" onclick="openLightbox(document.getElementById('main-image').src)" style="cursor: zoom-in;">
           <img src="${product.image}" alt="${product.name}" id="main-image">
         </div>
         <div class="product-thumbnails">${imagesHtml}</div>
@@ -473,7 +604,14 @@ function initProductPage() {
             </div>
           </div>
         </div>
-        <button class="btn btn-primary add-to-cart-detail" onclick="addFromDetail()">Add to Cart — ${formatPrice(product.price * quantity)}</button>
+        <div style="display: flex; gap: 0.75rem;">
+          <button class="btn btn-primary add-to-cart-detail" onclick="addFromDetail()" style="flex: 1; margin-bottom: 0;">Add to Cart — ${formatPrice(product.price * quantity)}</button>
+          <button class="wishlist-btn-detail${Wishlist.has(product.id) ? ' active' : ''}" onclick="Wishlist.toggle(${product.id}); this.classList.toggle('active');" aria-label="Toggle wishlist">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="${Wishlist.has(product.id) ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+            </svg>
+          </button>
+        </div>
       </div>
     `;
 
@@ -638,7 +776,7 @@ function initContactForm() {
   });
 }
 
-// ==================== 6. GENERAL INIT ====================
+// ==================== 7. GENERAL INIT ====================
 
 function initMobileNav() {
   const hamburger = document.getElementById('hamburger');
@@ -677,7 +815,7 @@ function setActiveNav() {
   });
 }
 
-// ==================== 7. INIT ON LOAD ====================
+// ==================== 8. INIT ON LOAD ====================
 
 document.addEventListener('DOMContentLoaded', () => {
   Cart.updateUI();
@@ -694,4 +832,14 @@ document.addEventListener('DOMContentLoaded', () => {
   if (page === 'confirmation.html') initConfirmationPage();
   if (page === 'faq.html') initFaqPage();
   if (page === 'contact.html') initContactForm();
+
+  // Newsletter
+  const nForm = document.getElementById('newsletter-form');
+  if (nForm) {
+    nForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      Cart.showToast('Thanks for subscribing!');
+      nForm.reset();
+    });
+  }
 });

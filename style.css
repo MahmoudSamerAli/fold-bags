@@ -416,7 +416,49 @@ h5 { font-size: 1rem; }
   font-size: 1rem;
 }
 
-/* ---------- 9. PRODUCT GRID ---------- */
+/* ---------- 9. SKELETON LOADING ---------- */
+@keyframes skeleton-pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+.skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  gap: 1.75rem;
+}
+
+.skeleton-card {
+  background: var(--white);
+}
+
+.skeleton-card-image {
+  aspect-ratio: 4/5;
+  background: var(--border);
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-card-body {
+  padding: 1.25rem 1rem;
+}
+
+.skeleton-line {
+  height: 0.75rem;
+  background: var(--border);
+  margin-bottom: 0.5rem;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-line.short {
+  width: 60%;
+}
+
+.skeleton-line.shorter {
+  width: 40%;
+}
+
+/* ---------- 10. PRODUCT GRID ---------- */
 .product-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
@@ -494,6 +536,59 @@ h5 { font-size: 1rem; }
 .product-card:hover .add-to-cart-btn {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
+}
+
+.wishlist-btn {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--white);
+  border-radius: 50%;
+  z-index: 2;
+  transition: all var(--transition);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.wishlist-btn:hover {
+  transform: scale(1.1);
+}
+
+.wishlist-btn.active {
+  color: #e74c3c;
+}
+
+.wishlist-btn.active svg {
+  fill: #e74c3c;
+}
+
+.wishlist-btn-detail {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  background: var(--white);
+  transition: all var(--transition);
+  flex-shrink: 0;
+}
+
+.wishlist-btn-detail:hover {
+  border-color: var(--text);
+}
+
+.wishlist-btn-detail.active {
+  color: #e74c3c;
+  border-color: #e74c3c;
+}
+
+.wishlist-btn-detail.active svg {
+  fill: #e74c3c;
 }
 
 /* ---------- 10. CATEGORY CARDS ---------- */
@@ -622,6 +717,22 @@ h5 { font-size: 1rem; }
   background: var(--accent);
   border-color: var(--accent);
   color: var(--white);
+}
+
+.filter-sort {
+  padding: 0.45rem 1.1rem;
+  font-size: 0.78rem;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  background: var(--white);
+  text-transform: capitalize;
+  cursor: pointer;
+  outline: none;
+  min-width: 160px;
+}
+
+.filter-sort:focus {
+  border-color: var(--accent);
 }
 
 /* ---------- 12. PRODUCT DETAIL ---------- */
@@ -816,6 +927,47 @@ h5 { font-size: 1rem; }
   padding: 1rem;
   font-size: 0.9rem;
   margin-bottom: 1rem;
+}
+
+/* ---------- LIGHTBOX ---------- */
+.lightbox {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  background: rgba(0, 0, 0, 0.92);
+  align-items: center;
+  justify-content: center;
+  cursor: zoom-out;
+}
+
+.lightbox.active {
+  display: flex;
+}
+
+.lightbox img {
+  max-width: 90vw;
+  max-height: 90vh;
+  object-fit: contain;
+}
+
+.lightbox-close {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  color: var(--white);
+  cursor: pointer;
+  transition: opacity var(--transition);
+}
+
+.lightbox-close:hover {
+  opacity: 0.6;
 }
 
 /* ---------- 13. CART DRAWER ---------- */
@@ -1543,7 +1695,7 @@ h5 { font-size: 1rem; }
 
 .footer-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr;
   gap: 3rem;
   margin-bottom: 3rem;
 }
@@ -1587,6 +1739,31 @@ h5 { font-size: 1rem; }
   color: rgba(255, 255, 255, 0.7);
   font-size: 0.9rem;
   margin-bottom: 0.4rem;
+}
+
+.footer-newsletter .newsletter-form {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.footer-newsletter .newsletter-form input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--white);
+  font-size: 0.85rem;
+  outline: none;
+}
+
+.footer-newsletter .newsletter-form input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.footer-newsletter .newsletter-form input:focus {
+  border-color: var(--accent);
 }
 
 .footer-bottom {
@@ -1731,7 +1908,7 @@ h5 { font-size: 1rem; }
   }
 
   .footer-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
     gap: 2rem;
   }
 
