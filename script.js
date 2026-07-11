@@ -700,7 +700,7 @@ function initCheckoutPage() {
       valid = false;
     }
 
-    const phonePattern = /^(?:\+20|0)?1[0-9]{9}$/;
+    const phonePattern = /^(?:\+20|0)1[0-9]{9}$/;
     if (!phonePattern.test(phone.value.trim())) {
       phone.closest('.form-group').classList.add('error');
       phone.closest('.form-group').querySelector('.error-text').textContent = 'Enter a valid Egyptian phone number';
