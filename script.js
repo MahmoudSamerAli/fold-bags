@@ -366,8 +366,10 @@ function generateOrderId() {
 // ==================== 4. WHATSAPP INTEGRATION ====================
 
 const WHATSAPP_NUMBER = '201027993246';
+const INSTAPAY_PHONE = '01X XXX XXX XX';
+const INSTAPAY_NAME = 'Your Name Here';
 
-function generateWhatsAppUrl(customerName, customerPhone, address, items, total) {
+function generateWhatsAppUrl(customerName, customerPhone, address, items, total, paymentMethod) {
   const itemLines = items.map((item, i) => {
     const variant = item.color || '';
     const size = item.size || '';
@@ -381,6 +383,7 @@ function generateWhatsAppUrl(customerName, customerPhone, address, items, total)
     `*Customer:* ${customerName}`,
     `*Phone:* ${customerPhone}`,
     `*Address:* ${address}`,
+    `*Payment:* ${paymentMethod === 'instapay' ? 'InstaPay' : 'Cash on Delivery'}`,
     '',
     '*Items:*',
     itemLines,
@@ -706,17 +709,21 @@ function initCheckoutPage() {
       return;
     }
 
+    const paymentEl = document.querySelector('input[name="payment"]:checked');
+    const paymentMethod = paymentEl ? paymentEl.value : 'cod';
+
     const total = Cart.getTotal();
     const waUrl = generateWhatsAppUrl(
       name.value.trim(),
       phone.value.trim(),
       address.value.trim(),
       items,
-      total
+      total,
+      paymentMethod
     );
 
     const orderId = generateOrderId();
-    const confirmationUrl = `confirmation.html?order=${encodeURIComponent(orderId)}&total=${total}`;
+    const confirmationUrl = `confirmation.html?order=${encodeURIComponent(orderId)}&total=${total}&payment=${paymentMethod}`;
 
     openWhatsApp(waUrl);
     Cart.clear();
@@ -731,8 +738,38 @@ function initConfirmationPage() {
   const params = new URLSearchParams(window.location.search);
   const orderId = params.get('order') || '#FOLD-2026';
   const total = params.get('total');
+  const payment = params.get('payment');
 
   const items = Cart.getItems();
+
+  let paymentHtml = '';
+  if (payment === 'instapay') {
+    paymentHtml = `
+      <div class="instapay-details">
+        <h3>Pay via InstaPay</h3>
+        <p>Send the exact amount and use your order number as reference.</p>
+        <div class="instapay-qr-placeholder">QR code placeholder<br>Replace with images/instapay-qr.png</div>
+        <div class="instapay-account">
+          <div class="instapay-row">
+            <span>Account</span>
+            <strong>${INSTAPAY_PHONE}</strong>
+          </div>
+          <div class="instapay-row">
+            <span>Name</span>
+            <strong>${INSTAPAY_NAME}</strong>
+          </div>
+          <div class="instapay-row">
+            <span>Amount</span>
+            <strong>${total ? formatPrice(Number(total)) : ''}</strong>
+          </div>
+          <div class="instapay-row">
+            <span>Reference</span>
+            <strong>${orderId}</strong>
+          </div>
+        </div>
+      </div>
+    `;
+  }
 
   container.innerHTML = `
     <div class="confirmation-icon">✓</div>
@@ -752,6 +789,7 @@ function initConfirmationPage() {
         <span>${total ? formatPrice(Number(total)) : ''}</span>
       </div>
     </div>
+    ${paymentHtml}
     <a href="shop.html" class="btn btn-primary">Continue Shopping</a>
   `;
 }

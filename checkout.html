@@ -97,9 +97,22 @@
             </div>
 
             <h2 style="margin-top: 2rem;">Payment</h2>
-            <p style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 1.5rem;">
-              Payment will be handled directly via WhatsApp after your order is confirmed.
-            </p>
+            <div class="payment-methods">
+              <label class="payment-option">
+                <input type="radio" name="payment" value="cod" checked>
+                <div class="payment-option-content">
+                  <strong>Cash on Delivery</strong>
+                  <small>Cairo area only</small>
+                </div>
+              </label>
+              <label class="payment-option">
+                <input type="radio" name="payment" value="instapay">
+                <div class="payment-option-content">
+                  <strong>InstaPay</strong>
+                  <small>Pay instantly via InstaPay</small>
+                </div>
+              </label>
+            </div>
 
             <button type="submit" class="btn btn-primary btn-block" id="place-order-btn">
               Place Order — <span id="checkout-total-display">0 EGP</span>

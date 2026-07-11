@@ -591,7 +591,7 @@ h5 { font-size: 1rem; }
   fill: #e74c3c;
 }
 
-/* ---------- 10. CATEGORY CARDS ---------- */
+/* ---------- 11. CATEGORY CARDS ---------- */
 .category-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -647,7 +647,7 @@ h5 { font-size: 1rem; }
   letter-spacing: 0.08em;
 }
 
-/* ---------- 11. FILTER BAR ---------- */
+/* ---------- 12. FILTER BAR ---------- */
 .filter-bar {
   display: flex;
   flex-wrap: wrap;
@@ -735,7 +735,7 @@ h5 { font-size: 1rem; }
   border-color: var(--accent);
 }
 
-/* ---------- 12. PRODUCT DETAIL ---------- */
+/* ---------- 13. PRODUCT DETAIL ---------- */
 .product-detail {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -970,7 +970,7 @@ h5 { font-size: 1rem; }
   opacity: 0.6;
 }
 
-/* ---------- 13. CART DRAWER ---------- */
+/* ---------- 14. CART DRAWER ---------- */
 .cart-overlay {
   position: fixed;
   inset: 0;
@@ -1167,7 +1167,7 @@ h5 { font-size: 1rem; }
   margin-bottom: 0;
 }
 
-/* ---------- 14. CART PAGE ---------- */
+/* ---------- 15. CART PAGE ---------- */
 .cart-page {
   padding: 3rem 0;
   min-height: 60vh;
@@ -1324,7 +1324,7 @@ h5 { font-size: 1rem; }
   margin-bottom: 2rem;
 }
 
-/* ---------- 15. CHECKOUT ---------- */
+/* ---------- 16. CHECKOUT ---------- */
 .checkout-page {
   padding: 3rem 0;
   min-height: 60vh;
@@ -1467,7 +1467,127 @@ h5 { font-size: 1rem; }
   font-weight: 600;
 }
 
-/* ---------- 16. CONFIRMATION ---------- */
+/* ---------- 16. PAYMENT METHODS ---------- */
+.payment-methods {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.payment-option {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--border);
+  background: var(--white);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.payment-option:hover {
+  border-color: var(--accent-light);
+}
+
+.payment-option:has(input:checked) {
+  border-color: var(--accent);
+  background: rgba(160, 132, 92, 0.04);
+}
+
+.payment-option input {
+  accent-color: var(--accent);
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.payment-option-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.payment-option-content strong {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.payment-option-content small {
+  font-size: 0.78rem;
+  color: var(--text-light);
+}
+
+/* ---------- 17. INSTAPAY DETAILS ---------- */
+.instapay-details {
+  background: var(--white);
+  padding: 2rem;
+  max-width: 500px;
+  margin: 0 auto 2rem;
+  text-align: center;
+  border: 1px solid var(--border);
+}
+
+.instapay-details h3 {
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.instapay-details > p {
+  color: var(--text-light);
+  font-size: 0.85rem;
+  margin-bottom: 1.25rem;
+}
+
+.instapay-qr-placeholder {
+  width: 180px;
+  height: 180px;
+  margin: 0 auto 1.25rem;
+  background: var(--bg-alt);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  color: var(--text-light);
+  border: 1px dashed var(--border);
+}
+
+.instapay-qr {
+  width: 180px;
+  height: 180px;
+  object-fit: contain;
+  margin: 0 auto 1.25rem;
+}
+
+.instapay-account {
+  text-align: left;
+  max-width: 280px;
+  margin: 0 auto;
+}
+
+.instapay-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.45rem 0;
+  font-size: 0.9rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.instapay-row:last-child {
+  border-bottom: none;
+}
+
+.instapay-row span {
+  color: var(--text-light);
+}
+
+.instapay-row strong {
+  font-weight: 600;
+}
+
+/* ---------- 19. CONFIRMATION ---------- */
 .confirmation-page {
   padding: 5rem 0;
   text-align: center;
@@ -1538,7 +1658,7 @@ h5 { font-size: 1rem; }
   font-weight: 500;
 }
 
-/* ---------- 17. ABOUT / CONTACT / FAQ ---------- */
+/* ---------- 20. ABOUT / CONTACT / FAQ ---------- */
 .page-header {
   padding: 4rem 0 2rem;
   text-align: center;
@@ -1686,7 +1806,7 @@ h5 { font-size: 1rem; }
   font-size: 0.95rem;
 }
 
-/* ---------- 18. FOOTER ---------- */
+/* ---------- 21. FOOTER ---------- */
 .site-footer {
   background: var(--text);
   color: var(--white);
@@ -1774,7 +1894,7 @@ h5 { font-size: 1rem; }
   color: rgba(255, 255, 255, 0.4);
 }
 
-/* ---------- 19. NOTIFICATION TOAST ---------- */
+/* ---------- 22. NOTIFICATION TOAST ---------- */
 .toast {
   position: fixed;
   bottom: 2rem;
@@ -1800,7 +1920,7 @@ h5 { font-size: 1rem; }
   font-weight: 500;
 }
 
-/* ---------- 20. RESPONSIVE ---------- */
+/* ---------- 23. RESPONSIVE ---------- */
 
 @media (max-width: 1024px) {
   .product-detail {
@@ -1987,7 +2107,7 @@ h5 { font-size: 1rem; }
   }
 }
 
-/* ---------- 21. UTILITY ---------- */
+/* ---------- 24. UTILITY ---------- */
 .text-center { text-align: center; }
 .text-light { color: var(--text-light); }
 .mt-1 { margin-top: 0.5rem; }
