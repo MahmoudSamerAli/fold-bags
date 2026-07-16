@@ -5,12 +5,23 @@
 
 let products = [];
 
+const SHEET_ID = '1_YvspuVe5BCe2xl0UfnIoiMls7QlqPc5sn-JzHEXCHc';
+const API_KEY = 'AIzaSyCtWFHia0XBKJvQNoUTSIqT1REmNcVLO-w';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec';
+
 async function loadProducts() {
   try {
-    const res = await fetch('/api/products');
+    const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Products?key=${API_KEY}&valueRenderOption=UNFORMATTED_VALUE`);
     if (!res.ok) throw new Error('Failed to fetch products');
-    const raw = await res.json();
-    products = raw.map(normalizeProduct);
+    const data = await res.json();
+    const values = data.values || [];
+    if (values.length < 2) return;
+    const headers = values[0];
+    products = values.slice(1).map(row => {
+      const obj = {};
+      headers.forEach((h, i) => { obj[h] = row[i] !== undefined ? row[i] : ''; });
+      return normalizeProduct(obj);
+    });
   } catch (err) {
     console.warn('Failed to load products:', err.message);
   }
@@ -790,9 +801,9 @@ function initCheckoutPage() {
     Cart.clear();
     openWhatsApp(waUrl);
 
-    fetch('/api/orders', {
+    fetch(APPS_SCRIPT_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({
         order_id: orderId,
         customer_name: name.value.trim(),
