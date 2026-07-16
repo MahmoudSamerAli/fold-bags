@@ -114,7 +114,7 @@
 
     async function updateStatus(id, status) {
       try {
-        const r = await fetch(`/api/orders/${id}/status`, {
+        const r = await fetch(`/api/orders/${id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
           body: JSON.stringify({ status }),

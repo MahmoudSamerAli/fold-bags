@@ -93,3 +93,14 @@ export async function deleteRow(env, tabName, rowIndex) {
     }],
   });
 }
+
+export function json(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+export function error(msg, status = 400) {
+  return json({ error: msg }, status);
+}

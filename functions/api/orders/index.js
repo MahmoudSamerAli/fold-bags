@@ -1,18 +1,9 @@
-import { getRows, appendRow } from '../../_lib/sheets.js';
-import { requireAdmin, json, error } from '../../_lib/auth.js';
+import { getRows, appendRow, json, error } from '../../_lib/sheets.js';
 
 export async function onRequest(context) {
   const { request, env } = context;
-  if (request.method === 'GET') return handleGet(request, env);
   if (request.method === 'POST') return handlePost(request, env);
   return error('Method not allowed', 405);
-}
-
-async function handleGet(request, env) {
-  const admin = await requireAdmin(request, env);
-  if (!admin) return error('Unauthorized', 401);
-  const rows = await getRows(env, 'Orders');
-  return json(rows);
 }
 
 async function handlePost(request, env) {
