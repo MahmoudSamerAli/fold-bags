@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Products — Fold Admin</title>
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+  <header class="admin-header">
+    <span class="logo">Fold Admin</span>
+    <nav>
+      <a href="dashboard.html">Dashboard</a>
+      <a href="products.html" class="active">Products</a>
+      <a href="orders.html">Orders</a>
+    </nav>
+    <span class="user-info" id="user-info"></span>
+  </header>
+
+  <div class="container">
+    <div class="toolbar">
+      <h1>Products</h1>
+      <button class="btn btn-primary" onclick="openAddModal()">+ Add Product</button>
+    </div>
+    <div class="card">
+      <div id="products-table"><div class="empty-state"><p>Loading products...</p></div></div>
+    </div>
+  </div>
+
+  <div class="modal" id="product-modal">
+    <div class="modal-content">
+      <h2 id="modal-title">Add Product</h2>
+      <input type="hidden" id="edit-id">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="p-name">Name</label>
+          <input type="text" id="p-name">
+        </div>
+        <div class="form-group">
+          <label for="p-category">Category</label>
+          <select id="p-category">
+            <option value="backpacks">Backpacks</option>
+            <option value="totes">Totes</option>
+            <option value="crossbody">Crossbody</option>
+            <option value="clutches">Clutches</option>
+            <option value="duffles">Duffles</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="p-price">Price (EGP)</label>
+          <input type="number" id="p-price" min="0">
+        </div>
+        <div class="form-group">
+          <label for="p-image">Image URL</label>
+          <input type="url" id="p-image">
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="p-description">Description</label>
+        <textarea id="p-description" rows="3"></textarea>
+      </div>
+      <div class="form-group">
+        <label for="p-images">Images (JSON array)</label>
+        <input type="text" id="p-images" placeholder='["url1","url2"]'>
+      </div>
+      <div class="form-group">
+        <label for="p-colors">Colors (JSON array)</label>
+        <input type="text" id="p-colors" placeholder='[{"name":"Black","hex":"#000"}]'>
+      </div>
+      <div class="form-group">
+        <label for="p-sizes">Sizes (JSON array)</label>
+        <input type="text" id="p-sizes" placeholder='["S","M","L"]'>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="closeModal('product-modal')">Cancel</button>
+        <button class="btn btn-primary" id="save-product-btn" onclick="saveProduct()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="delete-modal">
+    <div class="modal-content" style="max-width: 400px;">
+      <h2>Delete Product</h2>
+      <p>Are you sure you want to delete <strong id="delete-product-name"></strong>?</p>
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="closeModal('delete-modal')">Cancel</button>
+        <button class="btn btn-danger" onclick="confirmDelete()">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let products = [];
+    let deleteId = null;
+
+    function getToken() { return localStorage.getItem('fold_admin_token'); }
+    function checkAuth() {
+      if (!getToken()) { window.location.href = 'login.html'; }
+    }
+    checkAuth();
+    document.getElementById('user-info').textContent = localStorage.getItem('fold_admin_user') || '';
+
+    async function loadProducts() {
+      try {
+        const r = await fetch('/api/products', {
+          headers: { Authorization: `Bearer ${getToken()}` },
+        });
+        if (r.status === 401) { localStorage.removeItem('fold_admin_token'); window.location.href = 'login.html'; return; }
+        products = await r.json();
+        renderTable();
+      } catch (e) {
+        document.querySelector('#products-table').innerHTML = '<div class="empty-state"><p>Failed to load products.</p></div>';
+      }
+    }
+
+    function renderTable() {
+      const el = document.querySelector('#products-table');
+      if (!products.length) { el.innerHTML = '<div class="empty-state"><p>No products yet.</p></div>'; return; }
+      el.innerHTML = `<table><thead><tr><th>ID</th><th>Name</th><th>Category</th><th>Price</th><th style="width:140px">Actions</th></tr></thead>
+        <tbody>${products.map(p => `<tr><td>${p.id}</td><td><strong>${p.name}</strong></td><td>${p.category}</td><td>${Number(p.price).toLocaleString()} EGP</td>
+        <td><button class="btn btn-outline btn-sm" onclick="openEditModal(${p.id})">Edit</button> <button class="btn btn-danger btn-sm" onclick="openDeleteModal(${p.id})">Delete</button></td></tr>`).join('')}</tbody></table>`;
+    }
+
+    function openAddModal() {
+      document.getElementById('modal-title').textContent = 'Add Product';
+      document.getElementById('edit-id').value = '';
+      ['p-name','p-category','p-price','p-image','p-description','p-images','p-colors','p-sizes'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el.tagName === 'SELECT') el.selectedIndex = 0;
+        else el.value = '';
+      });
+      document.getElementById('product-modal').classList.add('active');
+    }
+
+    function openEditModal(id) {
+      const p = products.find(x => Number(x.id) === id);
+      if (!p) return;
+      document.getElementById('modal-title').textContent = 'Edit Product';
+      document.getElementById('edit-id').value = id;
+      document.getElementById('p-name').value = p.name || '';
+      document.getElementById('p-category').value = p.category || 'backpacks';
+      document.getElementById('p-price').value = Number(p.price) || 0;
+      document.getElementById('p-image').value = p.image || '';
+      document.getElementById('p-description').value = p.description || '';
+      document.getElementById('p-images').value = typeof p.images === 'string' ? p.images : JSON.stringify(p.images || []);
+      document.getElementById('p-colors').value = typeof p.colors === 'string' ? p.colors : JSON.stringify(p.colors || []);
+      document.getElementById('p-sizes').value = typeof p.sizes === 'string' ? p.sizes : JSON.stringify(p.sizes || []);
+      document.getElementById('product-modal').classList.add('active');
+    }
+
+    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+    async function saveProduct() {
+      const btn = document.getElementById('save-product-btn');
+      btn.disabled = true; btn.textContent = 'Saving...';
+      const editId = document.getElementById('edit-id').value;
+      const data = {
+        name: document.getElementById('p-name').value.trim(),
+        category: document.getElementById('p-category').value,
+        price: Number(document.getElementById('p-price').value),
+        image: document.getElementById('p-image').value.trim(),
+        description: document.getElementById('p-description').value.trim(),
+        images: JSON.parse(document.getElementById('p-images').value || '[]'),
+        colors: JSON.parse(document.getElementById('p-colors').value || '[]'),
+        sizes: JSON.parse(document.getElementById('p-sizes').value || '[]'),
+      };
+      try {
+        const url = editId ? `/api/products/${editId}` : '/api/products';
+        const method = editId ? 'PUT' : 'POST';
+        const r = await fetch(url, {
+          method, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+          body: JSON.stringify(data),
+        });
+        if (!r.ok) { const err = await r.json(); alert(err.error || 'Failed to save'); return; }
+        closeModal('product-modal');
+        await loadProducts();
+      } catch (e) { alert('Error saving product'); }
+      finally { btn.disabled = false; btn.textContent = 'Save'; }
+    }
+
+    function openDeleteModal(id) {
+      const p = products.find(x => Number(x.id) === id);
+      if (!p) return;
+      deleteId = id;
+      document.getElementById('delete-product-name').textContent = p.name;
+      document.getElementById('delete-modal').classList.add('active');
+    }
+
+    async function confirmDelete() {
+      try {
+        const r = await fetch(`/api/products/${deleteId}`, {
+          method: 'DELETE', headers: { Authorization: `Bearer ${getToken()}` },
+        });
+        if (!r.ok) { alert('Failed to delete'); return; }
+        closeModal('delete-modal');
+        await loadProducts();
+      } catch (e) { alert('Error deleting product'); }
+    }
+
+    loadProducts();
+    document.getElementById('product-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal('product-modal'); });
+    document.getElementById('delete-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal('delete-modal'); });
+  </script>
+</body>
+</html>

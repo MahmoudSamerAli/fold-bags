@@ -3,6 +3,38 @@
    ========================================== */
 'use strict';
 
+let products = [];
+
+async function loadProducts() {
+  try {
+    const res = await fetch('/api/products');
+    if (!res.ok) throw new Error('Failed to fetch products');
+    const raw = await res.json();
+    products = raw.map(normalizeProduct);
+  } catch (err) {
+    console.warn('Failed to load products:', err.message);
+  }
+}
+
+function tryParseJSON(str, fallback) {
+  if (!str) return fallback;
+  try { return JSON.parse(str); } catch { return fallback; }
+}
+
+function normalizeProduct(p) {
+  return {
+    id: Number(p.id),
+    name: p.name,
+    category: p.category,
+    price: Number(p.price) || 0,
+    description: p.description,
+    image: p.image,
+    images: tryParseJSON(p.images, []),
+    colors: tryParseJSON(p.colors, []),
+    sizes: tryParseJSON(p.sizes, []),
+  };
+}
+
 // ==================== 1. CART MODULE ====================
 
 const Cart = {
@@ -293,11 +325,6 @@ function formatPrice(price) {
 
 function getProductById(id) {
   return products.find(p => p.id === Number(id));
-}
-
-function getProductsByCategory(category) {
-  if (!category || category === 'all') return products;
-  return products.filter(p => p.category === category);
 }
 
 function renderSkeletonGrid(container, count = 6) {
@@ -668,6 +695,15 @@ function initProductPage() {
   }
 
   renderProduct();
+
+  const relatedGrid = document.getElementById('related-grid');
+  if (relatedGrid) {
+    renderSkeletonGrid(relatedGrid, 4);
+    const related = products
+      .filter(p => p.category === product.category && p.id !== product.id)
+      .slice(0, 4);
+    requestAnimationFrame(() => renderProductCards(related, relatedGrid));
+  }
 }
 
 function initCheckoutPage() {
@@ -753,6 +789,24 @@ function initCheckoutPage() {
 
     Cart.clear();
     openWhatsApp(waUrl);
+
+    fetch('/api/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        order_id: orderId,
+        customer_name: name.value.trim(),
+        customer_phone: phone.value.trim(),
+        city: cityVal,
+        address: address.value.trim(),
+        payment_method: paymentMethod,
+        items: items,
+        subtotal: Cart.getSubtotal(),
+        shipping: Cart.getShipping(),
+        total: total,
+      }),
+    }).catch(() => {});
+
     window.location.href = confirmationUrl;
   });
 }
@@ -776,7 +830,7 @@ function initConfirmationPage() {
       <div class="instapay-details">
         <h3>Pay via InstaPay</h3>
         <p>Send the exact amount and use your order number as reference.</p>
-        <div class="instapay-qr-placeholder">QR code placeholder<br>Replace with images/instapay-qr.png</div>
+        <div class="instapay-qr-placeholder">QR code placeholder</div>
         <div class="instapay-account">
           <div class="instapay-row">
             <span>Account</span>
@@ -848,6 +902,29 @@ function initContactForm() {
   });
 }
 
+function initIndexPage() {
+  const featuredGrid = document.getElementById('featured-grid');
+  if (featuredGrid) {
+    renderSkeletonGrid(featuredGrid, 6);
+    const featured = products.slice(0, 6);
+    requestAnimationFrame(() => renderProductCards(featured, featuredGrid));
+  }
+  const catGrid = document.getElementById('category-grid');
+  if (catGrid) {
+    const categories = [
+      { name: 'Backpacks', slug: 'backpacks', img: 'https://picsum.photos/seed/cat-backpacks/400/400' },
+      { name: 'Tote Bags', slug: 'totes', img: 'https://picsum.photos/seed/cat-totes/400/400' },
+      { name: 'Crossbody', slug: 'crossbody', img: 'https://picsum.photos/seed/cat-crossbody/400/400' },
+      { name: 'Clutches', slug: 'clutches', img: 'https://picsum.photos/seed/cat-clutches/400/400' },
+      { name: 'Duffles', slug: 'duffles', img: 'https://picsum.photos/seed/cat-duffles/400/400' }
+    ];
+    catGrid.innerHTML = categories.map(cat => {
+      const count = products.filter(p => p.category === cat.slug).length;
+      return `<a href="shop.html?category=${cat.slug}" class="category-card"><img src="${cat.img}" alt="${cat.name}" loading="lazy"><div class="category-card-overlay"><div class="category-card-title">${cat.name}</div><div class="category-card-count">${count} Products</div></div></a>`;
+    }).join('');
+  }
+}
+
 // ==================== 7. GENERAL INIT ====================
 
 function initMobileNav() {
@@ -889,7 +966,8 @@ function setActiveNav() {
 
 // ==================== 8. INIT ON LOAD ====================
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadProducts();
   Cart.updateUI();
   initMobileNav();
   initCartDrawer();
@@ -897,6 +975,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const page = window.location.pathname.split('/').pop() || 'index.html';
 
+  if (page === 'index.html' || page === '') initIndexPage();
   if (page === 'shop.html') initShopPage();
   if (page === 'product.html') initProductPage();
   if (page === 'cart.html') Cart.renderCartPage();

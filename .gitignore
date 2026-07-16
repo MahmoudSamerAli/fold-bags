@@ -11,3 +11,11 @@ desktop.ini
 .idea/
 *.swp
 *.swo
+
+# Node
+node_modules/
+server-old/
+
+# Secrets
+fold-admin-*.json
+.env

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Orders — Fold Admin</title>
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+  <header class="admin-header">
+    <span class="logo">Fold Admin</span>
+    <nav>
+      <a href="dashboard.html">Dashboard</a>
+      <a href="products.html">Products</a>
+      <a href="orders.html" class="active">Orders</a>
+    </nav>
+    <span class="user-info" id="user-info"></span>
+  </header>
+
+  <div class="container">
+    <div class="toolbar"><h1>Orders</h1></div>
+    <div class="card">
+      <div id="orders-table"><div class="empty-state"><p>Loading orders...</p></div></div>
+    </div>
+  </div>
+
+  <div class="modal" id="order-modal">
+    <div class="modal-content">
+      <h2>Order <span id="order-detail-id"></span></h2>
+      <div id="order-detail-content"></div>
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="closeModal('order-modal')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let orders = [];
+
+    function getToken() { return localStorage.getItem('fold_admin_token'); }
+    function checkAuth() {
+      if (!getToken()) { window.location.href = 'login.html'; }
+    }
+    checkAuth();
+    document.getElementById('user-info').textContent = localStorage.getItem('fold_admin_user') || '';
+
+    async function loadOrders() {
+      try {
+        const r = await fetch('/api/orders', {
+          headers: { Authorization: `Bearer ${getToken()}` },
+        });
+        if (r.status === 401) { localStorage.removeItem('fold_admin_token'); window.location.href = 'login.html'; return; }
+        orders = await r.json();
+        renderTable();
+      } catch (e) {
+        document.querySelector('#orders-table').innerHTML = '<div class="empty-state"><p>Failed to load orders.</p></div>';
+      }
+    }
+
+    function statusBadge(status) {
+      const s = (status || 'pending').toLowerCase();
+      const labels = { pending: 'Pending', confirmed: 'Confirmed', shipped: 'Shipped', delivered: 'Delivered', cancelled: 'Cancelled' };
+      return `<span class="badge badge-${s}">${labels[s] || s}</span>`;
+    }
+
+    function renderTable() {
+      const el = document.querySelector('#orders-table');
+      if (!orders.length) { el.innerHTML = '<div class="empty-state"><p>No orders yet.</p></div>'; return; }
+      el.innerHTML = `<table><thead><tr><th>Order ID</th><th>Customer</th><th>Phone</th><th>City</th><th>Total</th><th>Payment</th><th>Status</th><th>Date</th><th style="width:80px">Actions</th></tr></thead>
+        <tbody>${orders.map(o => `<tr><td><strong>${o.order_id || o.id}</strong></td><td>${o.customer_name}</td><td>${o.customer_phone}</td><td>${o.city || '—'}</td>
+        <td>${Number(o.total || 0).toLocaleString()} EGP</td><td>${o.payment_method === 'instapay' ? 'InstaPay' : 'COD'}</td>
+        <td>${statusBadge(o.status)}</td><td>${o.created_at ? new Date(o.created_at).toLocaleDateString() : '—'}</td>
+        <td><button class="btn btn-outline btn-sm" onclick="viewOrder('${o.id}')">View</button></td></tr>`).join('')}</tbody></table>`;
+    }
+
+    function viewOrder(id) {
+      const o = orders.find(x => String(x.id) === String(id));
+      if (!o) return;
+      let itemsHtml = '';
+      try {
+        const items = typeof o.items === 'string' ? JSON.parse(o.items) : (o.items || []);
+        if (items.length) {
+          itemsHtml = '<h3 style="margin:1rem 0 0.5rem;">Items</h3>' + items.map(item =>
+            `<div style="display:flex;justify-content:space-between;padding:0.375rem 0;border-bottom:1px solid #e8e8ed;font-size:0.875rem;">
+              <span>${item.name}${item.color ? ' (' + item.color + ')' : ''}${item.size ? ', ' + item.size : ''} × ${item.qty}</span>
+              <span>${Number(item.price * item.qty).toLocaleString()} EGP</span>
+            </div>`).join('');
+        }
+      } catch(e) { itemsHtml = '<p style="color:#86868b;">' + (o.items || 'No items') + '</p>'; }
+
+      document.getElementById('order-detail-id').textContent = o.order_id || ('#' + o.id);
+      document.getElementById('order-detail-content').innerHTML = `
+        <div class="grid-2" style="margin-top:1rem;">
+          <div><strong>Customer</strong><br>${o.customer_name || ''}</div>
+          <div><strong>Phone</strong><br>${o.customer_phone || ''}</div>
+          <div><strong>City</strong><br>${o.city || '—'}</div>
+          <div><strong>Address</strong><br>${o.address || ''}</div>
+          <div><strong>Payment</strong><br>${o.payment_method === 'instapay' ? 'InstaPay' : 'Cash on Delivery'}</div>
+          <div><strong>Status</strong><br>${statusBadge(o.status)}</div>
+          <div><strong>Subtotal</strong><br>${Number(o.subtotal || 0).toLocaleString()} EGP</div>
+          <div><strong>Shipping</strong><br>${Number(o.shipping || 0) === 0 ? 'Free' : Number(o.shipping).toLocaleString() + ' EGP'}</div>
+          <div><strong>Total</strong><br><strong>${Number(o.total || 0).toLocaleString()} EGP</strong></div>
+          <div><strong>Date</strong><br>${o.created_at ? new Date(o.created_at).toLocaleDateString() : '—'}</div>
+        </div>
+        ${itemsHtml}
+        <h3 style="margin:1.5rem 0 0.5rem;">Update Status</h3>
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+          ${['pending','confirmed','shipped','delivered','cancelled'].map(s =>
+            `<button class="btn ${o.status === s ? 'btn-primary' : 'btn-outline'} btn-sm" onclick="updateStatus('${o.id}','${s}')">${s.charAt(0).toUpperCase() + s.slice(1)}</button>`
+          ).join('')}
+        </div>`;
+      document.getElementById('order-modal').classList.add('active');
+    }
+
+    async function updateStatus(id, status) {
+      try {
+        const r = await fetch(`/api/orders/${id}/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+          body: JSON.stringify({ status }),
+        });
+        if (!r.ok) { alert('Failed to update status'); return; }
+        await loadOrders();
+        viewOrder(id);
+      } catch (e) { alert('Error updating status'); }
+    }
+
+    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+    loadOrders();
+    document.getElementById('order-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal('order-modal'); });
+  </script>
+</body>
+</html>

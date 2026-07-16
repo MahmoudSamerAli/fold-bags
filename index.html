@@ -188,37 +188,6 @@
     </div>
   </footer>
 
-  <script src="products.js"></script>
   <script src="script.js"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const featuredGrid = document.getElementById('featured-grid');
-      renderSkeletonGrid(featuredGrid, 6);
-      const featured = products.slice(0, 6);
-      requestAnimationFrame(() => renderProductCards(featured, featuredGrid));
-
-      const categories = [
-        { name: 'Backpacks', slug: 'backpacks', img: 'https://picsum.photos/seed/cat-backpacks/400/400' },
-        { name: 'Tote Bags', slug: 'totes', img: 'https://picsum.photos/seed/cat-totes/400/400' },
-        { name: 'Crossbody', slug: 'crossbody', img: 'https://picsum.photos/seed/cat-crossbody/400/400' },
-        { name: 'Clutches', slug: 'clutches', img: 'https://picsum.photos/seed/cat-clutches/400/400' },
-        { name: 'Duffles', slug: 'duffles', img: 'https://picsum.photos/seed/cat-duffles/400/400' }
-      ];
-
-      const catGrid = document.getElementById('category-grid');
-      catGrid.innerHTML = categories.map(cat => {
-        const count = products.filter(p => p.category === cat.slug).length;
-        return `
-          <a href="shop.html?category=${cat.slug}" class="category-card">
-            <img src="${cat.img}" alt="${cat.name}" loading="lazy">
-            <div class="category-card-overlay">
-              <div class="category-card-title">${cat.name}</div>
-              <div class="category-card-count">${count} Products</div>
-            </div>
-          </a>
-        `;
-      }).join('');
-    });
-  </script>
 </body>
 </html>

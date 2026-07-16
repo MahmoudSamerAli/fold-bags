@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — Fold Admin</title>
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+  <header class="admin-header">
+    <span class="logo">Fold Admin</span>
+    <nav>
+      <a href="dashboard.html" class="active">Dashboard</a>
+      <a href="products.html">Products</a>
+      <a href="orders.html">Orders</a>
+    </nav>
+    <span class="user-info" id="user-info"></span>
+  </header>
+
+  <div class="container">
+    <h1 style="margin-bottom: 1.5rem;">Dashboard</h1>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-label">Total Products</div><div class="stat-value" id="stat-products">—</div></div>
+      <div class="stat-card"><div class="stat-label">Total Orders</div><div class="stat-value" id="stat-orders">—</div></div>
+      <div class="stat-card"><div class="stat-label">Pending Orders</div><div class="stat-value" id="stat-pending">—</div></div>
+      <div class="stat-card"><div class="stat-label">Total Revenue</div><div class="stat-value" id="stat-revenue">—</div></div>
+    </div>
+  </div>
+
+  <script>
+    function getToken() { return localStorage.getItem('fold_admin_token'); }
+
+    function checkAuth() {
+      const token = getToken();
+      if (!token) { window.location.href = 'login.html'; }
+    }
+    checkAuth();
+    document.getElementById('user-info').textContent = localStorage.getItem('fold_admin_user') || '';
+
+    async function loadDashboard() {
+      try {
+        const res = await fetch('/api/admin/dashboard', {
+          headers: { Authorization: `Bearer ${getToken()}` },
+        });
+        if (res.status === 401) { localStorage.removeItem('fold_admin_token'); window.location.href = 'login.html'; return; }
+        const data = await res.json();
+        document.getElementById('stat-products').textContent = data.totalProducts;
+        document.getElementById('stat-orders').textContent = data.totalOrders;
+        document.getElementById('stat-pending').textContent = data.pendingOrders;
+        document.getElementById('stat-revenue').textContent = data.totalRevenue.toLocaleString() + ' EGP';
+      } catch (err) {
+        console.error('Failed to load dashboard:', err);
+      }
+    }
+    loadDashboard();
+  </script>
+</body>
+</html>
