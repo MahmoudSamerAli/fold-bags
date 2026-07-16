@@ -14,11 +14,8 @@ desktop.ini
 
 # Node
 node_modules/
-server/node_modules/
+server-old/
 
 # Secrets
 fold-admin-*.json
-server/.env
-
-# Old
-server-old/
+.env
