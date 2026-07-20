@@ -393,8 +393,8 @@ function generateOrderId() {
 // ==================== 4. WHATSAPP INTEGRATION ====================
 
 const WHATSAPP_NUMBER = '201027993246';
-const INSTAPAY_PHONE = '01X XXX XXX XX';
-const INSTAPAY_NAME = 'Your Name Here';
+const INSTAPAY_PHONE = '01027993246';
+const INSTAPAY_NAME = 'Mahmoud Samer Sayed Sayed';
 
 function generateWhatsAppUrl(customerName, customerPhone, address, city, items, total, paymentMethod) {
   const itemLines = items.map((item, i) => {

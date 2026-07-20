@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const { getRows, appendRow, updateRow, deleteRow } = require('../sheets');
-const { requireAdmin } = require('../auth');
 
 router.get('/', async (req, res) => {
   try {
@@ -25,7 +24,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-router.post('/', requireAdmin, async (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const body = req.body;
     const rows = await getRows('Products');
@@ -51,7 +50,7 @@ router.post('/', requireAdmin, async (req, res) => {
   }
 });
 
-router.put('/:id', requireAdmin, async (req, res) => {
+router.put('/:id', async (req, res) => {
   try {
     const rows = await getRows('Products');
     const row = rows.find(r => String(r.id) === req.params.id);
@@ -78,7 +77,7 @@ router.put('/:id', requireAdmin, async (req, res) => {
   }
 });
 
-router.delete('/:id', requireAdmin, async (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
     const rows = await getRows('Products');
     const row = rows.find(r => String(r.id) === req.params.id);

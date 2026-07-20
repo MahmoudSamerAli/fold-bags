@@ -157,7 +157,7 @@
         sizes: JSON.parse(document.getElementById('p-sizes').value || '[]'),
       };
       try {
-        const url = editId ? `/api/products/${editId}` : '/api/products';
+        const url = editId ? `/api/admin/products/${editId}` : '/api/admin/products';
         const method = editId ? 'PUT' : 'POST';
         const r = await fetch(url, {
           method, headers: { 'Content-Type': 'application/json' },
@@ -180,7 +180,7 @@
 
     async function confirmDelete() {
       try {
-        const r = await fetch(`/api/products/${deleteId}`, {
+        const r = await fetch(`/api/admin/products/${deleteId}`, {
           method: 'DELETE',
         });
         if (!r.ok) { alert('Failed to delete'); return; }

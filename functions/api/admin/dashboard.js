@@ -1,16 +1,15 @@
-const express = require('express');
-const router = express.Router();
-const { getRows } = require('../sheets');
+import { getRows, json, error } from '../../_lib/sheets.js';
 
-router.get('/dashboard', async (req, res) => {
+export async function onRequest(context) {
+  if (context.request.method !== 'GET') return error('Method not allowed', 405);
   try {
     const [products, orders] = await Promise.all([
-      getRows('Products'),
-      getRows('Orders'),
+      getRows(context.env, 'Products'),
+      getRows(context.env, 'Orders'),
     ]);
     const totalRevenue = orders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
     const pendingOrders = orders.filter(o => o.status === 'pending' || !o.status);
-    return res.json({
+    return json({
       totalProducts: products.length,
       totalOrders: orders.length,
       totalRevenue,
@@ -18,8 +17,6 @@ router.get('/dashboard', async (req, res) => {
     });
   } catch (err) {
     console.error('Dashboard error:', err);
-    return res.status(500).json({ error: 'Server error' });
+    return error('Server error', 500);
   }
-});
-
-module.exports = router;
+}

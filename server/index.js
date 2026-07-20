@@ -16,4 +16,18 @@ app.use('/api/orders', require('./routes/orders'));
 
 app.get('/', (req, res) => res.json({ status: 'Fold Admin API running' }));
 
-app.listen(PORT, () => console.log(`Fold Admin server running on http://localhost:${PORT}`));
+const os = require('os');
+const interfaces = os.networkInterfaces();
+let networkIp = 'localhost';
+for (const name of Object.keys(interfaces)) {
+  for (const iface of interfaces[name]) {
+    if (iface.family === 'IPv4' && !iface.internal) { networkIp = iface.address; break; }
+  }
+  if (networkIp !== 'localhost') break;
+}
+
+app.listen(PORT, () => {
+  console.log(`\n  Fold Admin Server running:`);
+  console.log(`  ➜ Local:   http://localhost:${PORT}/admin/dashboard.html`);
+  console.log(`  ➜ Network: http://${networkIp}:${PORT}/admin/dashboard.html\n`);
+});

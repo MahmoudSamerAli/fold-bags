@@ -1,9 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const { getRows, updateRow } = require('../sheets');
-const { requireAdmin } = require('../auth');
 
-router.get('/', requireAdmin, async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const rows = await getRows('Orders');
     return res.json(rows);
@@ -13,7 +12,7 @@ router.get('/', requireAdmin, async (req, res) => {
   }
 });
 
-router.patch('/:id', requireAdmin, async (req, res) => {
+router.patch('/:id', async (req, res) => {
   try {
     const { status } = req.body;
     const valid = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'];
