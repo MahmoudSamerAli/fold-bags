@@ -69,9 +69,16 @@
         <label for="p-colors">Colors (JSON array)</label>
         <input type="text" id="p-colors" placeholder='[{"name":"Black","hex":"#000"}]'>
       </div>
-      <div class="form-group">
-        <label for="p-sizes">Sizes (JSON array)</label>
-        <input type="text" id="p-sizes" placeholder='["S","M","L"]'>
+        <div class="form-group">
+          <label for="p-sizes">Sizes (JSON array)</label>
+          <input type="text" id="p-sizes" placeholder='["S","M","L"]'>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="p-stock">Stock Quantity</label>
+          <input type="number" id="p-stock" min="0" value="0">
+        </div>
       </div>
       <div class="modal-actions">
         <button class="btn btn-outline" onclick="closeModal('product-modal')">Cancel</button>
@@ -108,17 +115,19 @@
     function renderTable() {
       const el = document.querySelector('#products-table');
       if (!products.length) { el.innerHTML = '<div class="empty-state"><p>No products yet.</p></div>'; return; }
-      el.innerHTML = `<table><thead><tr><th>ID</th><th>Name</th><th>Category</th><th>Price</th><th style="width:140px">Actions</th></tr></thead>
+      el.innerHTML = `<table><thead><tr>        <th>ID</th><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th style="width:140px">Actions</th></tr></thead>
         <tbody>${products.map(p => `<tr><td>${p.id}</td><td><strong>${p.name}</strong></td><td>${p.category}</td><td>${Number(p.price).toLocaleString()} EGP</td>
+        <td>${p.stock !== undefined ? p.stock : '—'}</td>
         <td><button class="btn btn-outline btn-sm" onclick="openEditModal(${p.id})">Edit</button> <button class="btn btn-danger btn-sm" onclick="openDeleteModal(${p.id})">Delete</button></td></tr>`).join('')}</tbody></table>`;
     }
 
     function openAddModal() {
       document.getElementById('modal-title').textContent = 'Add Product';
       document.getElementById('edit-id').value = '';
-      ['p-name','p-category','p-price','p-image','p-description','p-images','p-colors','p-sizes'].forEach(id => {
+      ['p-name','p-category','p-price','p-image','p-description','p-images','p-colors','p-sizes','p-stock'].forEach(id => {
         const el = document.getElementById(id);
         if (el.tagName === 'SELECT') el.selectedIndex = 0;
+        else if (id === 'p-stock') el.value = 0;
         else el.value = '';
       });
       document.getElementById('product-modal').classList.add('active');
@@ -137,6 +146,7 @@
       document.getElementById('p-images').value = typeof p.images === 'string' ? p.images : JSON.stringify(p.images || []);
       document.getElementById('p-colors').value = typeof p.colors === 'string' ? p.colors : JSON.stringify(p.colors || []);
       document.getElementById('p-sizes').value = typeof p.sizes === 'string' ? p.sizes : JSON.stringify(p.sizes || []);
+      document.getElementById('p-stock').value = Number(p.stock) || 0;
       document.getElementById('product-modal').classList.add('active');
     }
 
@@ -155,6 +165,7 @@
         images: JSON.parse(document.getElementById('p-images').value || '[]'),
         colors: JSON.parse(document.getElementById('p-colors').value || '[]'),
         sizes: JSON.parse(document.getElementById('p-sizes').value || '[]'),
+        stock: Number(document.getElementById('p-stock').value) || 0,
       };
       try {
         const url = editId ? `/api/admin/products/${editId}` : '/api/admin/products';

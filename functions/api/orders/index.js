@@ -1,4 +1,4 @@
-import { getRows, appendRow, json, error } from '../../_lib/sheets.js';
+import { getRows, appendRow, updateRow, json, error } from '../../_lib/sheets.js';
 
 export async function onRequest(context) {
   const { request, env } = context;
@@ -27,5 +27,21 @@ async function handlePost(request, env) {
     created_at: now,
     updated_at: now,
   });
+
+  const items = typeof body.items === 'string' ? JSON.parse(body.items) : (body.items || []);
+  if (items.length > 0) {
+    const products = await getRows(env, 'Products');
+    for (const item of items) {
+      const product = products.find(p => String(p.id) === String(item.id));
+      if (product && product.stock !== undefined) {
+        const currentStock = Number(product.stock) || 0;
+        const newStock = Math.max(0, currentStock - (item.qty || 1));
+        const data = { ...product, stock: String(newStock), updated_at: new Date().toISOString() };
+        delete data._row;
+        await updateRow(env, 'Products', product._row, data);
+      }
+    }
+  }
+
   return json({ success: true, order_id: body.order_id }, 201);
 }

@@ -17,6 +17,7 @@ export async function onRequest(context) {
       images: JSON.stringify(body.images || []),
       colors: JSON.stringify(body.colors || []),
       sizes: JSON.stringify(body.sizes || []),
+      stock: String(body.stock ?? 0),
       created_at: now,
       updated_at: now,
     });

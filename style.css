@@ -533,6 +533,34 @@ h5 { font-size: 1rem; }
   transform: translateX(-50%) translateY(0);
 }
 
+.product-card.out-of-stock {
+  opacity: 0.6;
+}
+
+.out-of-stock-badge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--text);
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  z-index: 2;
+}
+
+.product-info-stock {
+  margin-bottom: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.stock-ok { color: #34c759; }
+.stock-low { color: #ff9500; }
+.stock-none { color: #ff3b30; }
+
 .wishlist-btn {
   position: absolute;
   top: 0.75rem;

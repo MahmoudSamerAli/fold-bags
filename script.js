@@ -347,10 +347,12 @@ function renderProductCards(productsArr, container) {
 
   container.innerHTML = productsArr.map(p => {
     const isWishlisted = wishlistedIds.includes(p.id);
+    const inStock = p.stock === undefined || Number(p.stock) > 0;
     return `
-    <div class="product-card" onclick="window.location.href='product.html?id=${p.id}'">
+    <div class="product-card${inStock ? '' : ' out-of-stock'}" onclick="window.location.href='product.html?id=${p.id}'">
       <div class="product-card-image">
         <img src="${p.image}" alt="${p.name}" loading="lazy">
+        ${inStock ? '' : '<div class="out-of-stock-badge">Out of Stock</div>'}
         <button class="wishlist-btn${isWishlisted ? ' active' : ''}" data-id="${p.id}"
           onclick="event.stopPropagation(); Wishlist.toggle(${p.id})"
           aria-label="Add to wishlist">
@@ -361,7 +363,7 @@ function renderProductCards(productsArr, container) {
         <button class="btn btn-primary btn-sm add-to-cart-btn" 
           onclick="event.stopPropagation(); quickAdd(${p.id})"
           data-id="${p.id}">
-          Add to Cart
+          ${inStock ? 'Add to Cart' : 'Out of Stock'}
         </button>
       </div>
       <div class="product-card-body">
@@ -376,6 +378,8 @@ function renderProductCards(productsArr, container) {
 function quickAdd(productId) {
   const product = getProductById(productId);
   if (!product) return;
+  const inStock = product.stock === undefined || Number(product.stock) > 0;
+  if (!inStock) { Cart.showToast('This item is out of stock'); return; }
   const color = product.colors[0].name;
   const size = product.sizes ? product.sizes[0] : 'S';
   Cart.add(product, color, size, 1);
@@ -598,6 +602,9 @@ function initProductPage() {
       `<img src="${img}" alt="${product.name}" class="product-thumbnail${i === 0 ? ' active' : ''}" onclick="switchImage(this, '${img}')">`
     ).join('');
 
+    const inStock = product.stock === undefined || Number(product.stock) > 0;
+    const stockCount = product.stock !== undefined ? Number(product.stock) : null;
+
     const colorsHtml = product.colors.map(c =>
       `<button class="color-swatch${c.name === selectedColor ? ' active' : ''}" style="background: ${c.hex}" title="${c.name}" onclick="selectColor('${c.name}', this)"></button>`
     ).join('');
@@ -617,6 +624,7 @@ function initProductPage() {
         <div class="product-info-category">${product.category}</div>
         <h1>${product.name}</h1>
         <div class="product-info-price">${formatPrice(product.price)}</div>
+        ${stockCount !== null ? `<div class="product-info-stock">${inStock ? (stockCount <= 5 ? `<span class="stock-low">Only ${stockCount} left</span>` : `<span class="stock-ok">In Stock</span>`) : `<span class="stock-none">Out of Stock</span>`}</div>` : ''}
         <p class="product-info-description">${product.description}</p>
         <div class="product-options">
           <div class="option-group">
@@ -637,7 +645,7 @@ function initProductPage() {
           </div>
         </div>
         <div style="display: flex; gap: 0.75rem;">
-          <button class="btn btn-primary add-to-cart-detail" onclick="addFromDetail()" style="flex: 1; margin-bottom: 0;">Add to Cart — ${formatPrice(product.price * quantity)}</button>
+          <button class="btn btn-primary add-to-cart-detail" onclick="addFromDetail()" style="flex: 1; margin-bottom: 0;"${inStock ? '' : ' disabled'}>${inStock ? `Add to Cart — ${formatPrice(product.price * quantity)}` : 'Out of Stock'}</button>
           <button class="wishlist-btn-detail${Wishlist.has(product.id) ? ' active' : ''}" onclick="Wishlist.toggle(${product.id}); this.classList.toggle('active');" aria-label="Toggle wishlist">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="${Wishlist.has(product.id) ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
@@ -672,7 +680,8 @@ function initProductPage() {
       const input = document.getElementById('qty-input');
       let val = parseInt(input.value) + delta;
       if (val < 1) val = 1;
-      if (val > 99) val = 99;
+      const maxQty = stockCount !== null ? stockCount : 99;
+      if (val > maxQty) val = maxQty;
       input.value = val;
       quantity = val;
       const btn = document.querySelector('.add-to-cart-detail');
@@ -682,7 +691,8 @@ function initProductPage() {
     window.setQty = function(val) {
       let v = parseInt(val);
       if (isNaN(v) || v < 1) v = 1;
-      if (v > 99) v = 99;
+      const maxQty = stockCount !== null ? stockCount : 99;
+      if (v > maxQty) v = maxQty;
       quantity = v;
       document.getElementById('qty-input').value = v;
       const btn = document.querySelector('.add-to-cart-detail');
@@ -690,6 +700,7 @@ function initProductPage() {
     };
 
     window.addFromDetail = function() {
+      if (!inStock) { Cart.showToast('This item is out of stock'); return; }
       Cart.add(product, selectedColor, selectedSize, quantity);
     };
   }

@@ -30,6 +30,7 @@ async function handleUpdate(request, env, id) {
     images: body.images ? JSON.stringify(body.images) : row.images,
     colors: body.colors ? JSON.stringify(body.colors) : row.colors,
     sizes: body.sizes ? JSON.stringify(body.sizes) : row.sizes,
+    stock: body.stock !== undefined ? String(body.stock) : row.stock,
     created_at: row.created_at,
     updated_at: now,
   });
