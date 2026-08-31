@@ -1,10 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
   <rect width="100" height="100" rx="22" fill="#a0845c"/>
-
-  <!-- vertical stem -->
-  <path d="M46 72 C46 68 46 62 46 54 V32" stroke="#f8f5f0" stroke-width="10" stroke-linecap="round" fill="none"/>
-  <!-- top bar -->
-  <path d="M42 34 H70" stroke="#f8f5f0" stroke-width="10" stroke-linecap="round" fill="none"/>
-  <!-- middle bar -->
-  <path d="M42 50 H64" stroke="#f8f5f0" stroke-width="10" stroke-linecap="round" fill="none"/>
+  <path d="M44 74 C44 70 44 64 44 54 V30" stroke="#f8f5f0" stroke-width="11" stroke-linecap="round" fill="none"/>
+  <path d="M42 33 H70" stroke="#f8f5f0" stroke-width="11" stroke-linecap="round" fill="none"/>
+  <path d="M42 51 H62" stroke="#f8f5f0" stroke-width="11" stroke-linecap="round" fill="none"/>
 </svg>
