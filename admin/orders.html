@@ -4,21 +4,31 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Orders — Fold Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="admin.css">
 </head>
 <body>
-  <header class="admin-header">
-    <span class="logo">Fold Admin</span>
-    <nav>
-      <a href="dashboard.html">Dashboard</a>
-      <a href="products.html">Products</a>
-      <a href="orders.html" class="active">Orders</a>
-    </nav>
-  
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="dashboard.html" class="logo">Fold</a>
+      <nav class="main-nav">
+        <a href="dashboard.html">Dashboard</a>
+        <a href="products.html">Products</a>
+        <a href="orders.html" class="active">Orders</a>
+      </nav>
+      <div class="header-right">
+        <span class="user-info" id="user-info"></span>
+        <button class="btn btn-sm btn-outline logout-btn" onclick="handleLogout()">Log Out</button>
+      </div>
+    </div>
   </header>
 
   <div class="container">
-    <div class="toolbar"><h1>Orders</h1></div>
+    <div class="toolbar">
+      <h1 class="page-title">Orders</h1>
+    </div>
     <div class="card">
       <div id="orders-table"><div class="empty-state"><p>Loading orders...</p></div></div>
     </div>
@@ -71,12 +81,12 @@
         const items = typeof o.items === 'string' ? JSON.parse(o.items) : (o.items || []);
         if (items.length) {
           itemsHtml = '<h3 style="margin:1rem 0 0.5rem;">Items</h3>' + items.map(item =>
-            `<div style="display:flex;justify-content:space-between;padding:0.375rem 0;border-bottom:1px solid #e8e8ed;font-size:0.875rem;">
+            `<div style="display:flex;justify-content:space-between;padding:0.375rem 0;border-bottom:1px solid var(--border);font-size:0.875rem;">
               <span>${item.name}${item.color ? ' (' + item.color + ')' : ''}${item.size ? ', ' + item.size : ''} × ${item.qty}</span>
               <span>${Number(item.price * item.qty).toLocaleString()} EGP</span>
             </div>`).join('');
         }
-      } catch(e) { itemsHtml = '<p style="color:#86868b;">' + (o.items || 'No items') + '</p>'; }
+      } catch(e) { itemsHtml = '<p style="color:var(--text-light);">' + (o.items || 'No items') + '</p>'; }
 
       document.getElementById('order-detail-id').textContent = o.order_id || ('#' + o.id);
       document.getElementById('order-detail-content').innerHTML = `
@@ -118,6 +128,11 @@
     function closeModal(id) { document.getElementById(id).classList.remove('active'); }
     loadOrders();
     document.getElementById('order-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal('order-modal'); });
+
+    function handleLogout() {
+      localStorage.removeItem('admin_token');
+      window.location.href = 'login.html';
+    }
   </script>
 </body>
 </html>

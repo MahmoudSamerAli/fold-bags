@@ -4,22 +4,30 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Products — Fold Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="admin.css">
 </head>
 <body>
-  <header class="admin-header">
-    <span class="logo">Fold Admin</span>
-    <nav>
-      <a href="dashboard.html">Dashboard</a>
-      <a href="products.html" class="active">Products</a>
-      <a href="orders.html">Orders</a>
-    </nav>
-  
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="dashboard.html" class="logo">Fold</a>
+      <nav class="main-nav">
+        <a href="dashboard.html">Dashboard</a>
+        <a href="products.html" class="active">Products</a>
+        <a href="orders.html">Orders</a>
+      </nav>
+      <div class="header-right">
+        <span class="user-info" id="user-info"></span>
+        <button class="btn btn-sm btn-outline logout-btn" onclick="handleLogout()">Log Out</button>
+      </div>
+    </div>
   </header>
 
   <div class="container">
     <div class="toolbar">
-      <h1>Products</h1>
+      <h1 class="page-title">Products</h1>
       <button class="btn btn-primary" onclick="openAddModal()">+ Add Product</button>
     </div>
     <div class="card">
@@ -53,33 +61,55 @@
           <input type="number" id="p-price" min="0">
         </div>
         <div class="form-group">
-          <label for="p-image">Image URL</label>
-          <input type="url" id="p-image">
+          <label for="p-stock">Stock Quantity</label>
+          <input type="number" id="p-stock" min="0" value="0">
         </div>
       </div>
       <div class="form-group">
         <label for="p-description">Description</label>
         <textarea id="p-description" rows="3"></textarea>
       </div>
+
       <div class="form-group">
-        <label for="p-images">Images (JSON array)</label>
-        <input type="text" id="p-images" placeholder='["url1","url2"]'>
+        <label>Main Image</label>
+        <div class="upload-area">
+          <div class="upload-actions">
+            <input type="file" id="p-image-file" accept="image/*" style="display:none">
+            <input type="hidden" id="p-image" value="">
+            <button class="btn btn-outline btn-sm" type="button" onclick="document.getElementById('p-image-file').click()">Choose Image</button>
+            <span class="upload-loading" id="main-image-loading">Uploading...</span>
+          </div>
+          <div class="img-preview-wrap" id="main-image-preview">
+            <img class="img-preview" id="main-image-img">
+            <button class="btn btn-danger btn-sm" type="button" onclick="removeMainImage()" style="margin-top:0.25rem">Remove</button>
+          </div>
+        </div>
       </div>
+
       <div class="form-group">
-        <label for="p-colors">Colors (JSON array)</label>
-        <input type="text" id="p-colors" placeholder='[{"name":"Black","hex":"#000"}]'>
+        <label>Additional Images</label>
+        <div class="upload-area">
+          <div class="upload-actions">
+            <input type="file" id="p-images-file" accept="image/*" style="display:none">
+            <input type="hidden" id="p-images" value="[]">
+            <button class="btn btn-outline btn-sm" type="button" onclick="document.getElementById('p-images-file').click()">Add Image</button>
+            <span class="upload-loading" id="p-images-loading">Uploading...</span>
+          </div>
+          <div id="p-images-gallery"></div>
+        </div>
       </div>
+
+      <div class="form-row">
         <div class="form-group">
-          <label for="p-sizes">Sizes (JSON array)</label>
+          <label for="p-colors">Colors (JSON)</label>
+          <input type="text" id="p-colors" placeholder='[{"name":"Black","hex":"#000"}]'>
+        </div>
+        <div class="form-group">
+          <label for="p-sizes">Sizes (JSON)</label>
           <input type="text" id="p-sizes" placeholder='["S","M","L"]'>
         </div>
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label for="p-stock">Stock Quantity</label>
-          <input type="number" id="p-stock" min="0" value="0">
-        </div>
-      </div>
+
       <div class="modal-actions">
         <button class="btn btn-outline" onclick="closeModal('product-modal')">Cancel</button>
         <button class="btn btn-primary" id="save-product-btn" onclick="saveProduct()">Save</button>
@@ -115,21 +145,30 @@
     function renderTable() {
       const el = document.querySelector('#products-table');
       if (!products.length) { el.innerHTML = '<div class="empty-state"><p>No products yet.</p></div>'; return; }
-      el.innerHTML = `<table><thead><tr>        <th>ID</th><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th style="width:140px">Actions</th></tr></thead>
+      el.innerHTML = `<table><thead><tr><th>ID</th><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th style="width:140px">Actions</th></tr></thead>
         <tbody>${products.map(p => `<tr><td>${p.id}</td><td><strong>${p.name}</strong></td><td>${p.category}</td><td>${Number(p.price).toLocaleString()} EGP</td>
         <td>${p.stock !== undefined ? p.stock : '—'}</td>
         <td><button class="btn btn-outline btn-sm" onclick="openEditModal(${p.id})">Edit</button> <button class="btn btn-danger btn-sm" onclick="openDeleteModal(${p.id})">Delete</button></td></tr>`).join('')}</tbody></table>`;
     }
 
-    function openAddModal() {
-      document.getElementById('modal-title').textContent = 'Add Product';
+    function resetModal() {
       document.getElementById('edit-id').value = '';
-      ['p-name','p-category','p-price','p-image','p-description','p-images','p-colors','p-sizes','p-stock'].forEach(id => {
+      ['p-name','p-category','p-price','p-description','p-colors','p-sizes','p-stock'].forEach(id => {
         const el = document.getElementById(id);
         if (el.tagName === 'SELECT') el.selectedIndex = 0;
         else if (id === 'p-stock') el.value = 0;
         else el.value = '';
       });
+      document.getElementById('p-image').value = '';
+      document.getElementById('p-images').value = '[]';
+      document.getElementById('main-image-preview').style.display = 'none';
+      document.getElementById('main-image-img').src = '';
+      document.getElementById('p-images-gallery').innerHTML = '';
+    }
+
+    function openAddModal() {
+      document.getElementById('modal-title').textContent = 'Add Product';
+      resetModal();
       document.getElementById('product-modal').classList.add('active');
     }
 
@@ -141,12 +180,26 @@
       document.getElementById('p-name').value = p.name || '';
       document.getElementById('p-category').value = p.category || 'backpacks';
       document.getElementById('p-price').value = Number(p.price) || 0;
-      document.getElementById('p-image').value = p.image || '';
       document.getElementById('p-description').value = p.description || '';
-      document.getElementById('p-images').value = typeof p.images === 'string' ? p.images : JSON.stringify(p.images || []);
       document.getElementById('p-colors').value = typeof p.colors === 'string' ? p.colors : JSON.stringify(p.colors || []);
       document.getElementById('p-sizes').value = typeof p.sizes === 'string' ? p.sizes : JSON.stringify(p.sizes || []);
       document.getElementById('p-stock').value = Number(p.stock) || 0;
+
+      const mainImg = p.image || '';
+      document.getElementById('p-image').value = mainImg;
+      if (mainImg) {
+        document.getElementById('main-image-img').src = mainImg;
+        document.getElementById('main-image-preview').style.display = 'block';
+      } else {
+        document.getElementById('main-image-preview').style.display = 'none';
+        document.getElementById('main-image-img').src = '';
+      }
+
+      let extraImgs = [];
+      try { extraImgs = typeof p.images === 'string' ? JSON.parse(p.images) : (p.images || []); } catch(e) {}
+      document.getElementById('p-images').value = JSON.stringify(extraImgs);
+      renderImagesGallery();
+
       document.getElementById('product-modal').classList.add('active');
     }
 
@@ -170,10 +223,7 @@
       try {
         const url = editId ? `/api/admin/products/${editId}` : '/api/admin/products';
         const method = editId ? 'PUT' : 'POST';
-        const r = await fetch(url, {
-          method, headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data),
-        });
+        const r = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
         if (!r.ok) { const err = await r.json(); alert(err.error || 'Failed to save'); return; }
         closeModal('product-modal');
         await loadProducts();
@@ -191,18 +241,79 @@
 
     async function confirmDelete() {
       try {
-        const r = await fetch(`/api/admin/products/${deleteId}`, {
-          method: 'DELETE',
-        });
+        const r = await fetch(`/api/admin/products/${deleteId}`, { method: 'DELETE' });
         if (!r.ok) { alert('Failed to delete'); return; }
         closeModal('delete-modal');
         await loadProducts();
       } catch (e) { alert('Error deleting product'); }
     }
 
+    async function uploadFile(file, loadingEl, hiddenInputId) {
+      loadingEl.style.display = 'inline';
+      try {
+        const fd = new FormData();
+        fd.append('image', file);
+        const res = await fetch('/api/admin/upload', { method: 'POST', body: fd });
+        const data = await res.json();
+        if (!res.ok) { alert(data.error || 'Upload failed'); return null; }
+        return data.url;
+      } catch (e) { alert('Upload error'); return null; }
+      finally { loadingEl.style.display = 'none'; }
+    }
+
+    document.getElementById('p-image-file').addEventListener('change', async function() {
+      if (!this.files[0]) return;
+      const url = await uploadFile(this.files[0], document.getElementById('main-image-loading'), 'p-image');
+      if (url) {
+        document.getElementById('p-image').value = url;
+        document.getElementById('main-image-img').src = url;
+        document.getElementById('main-image-preview').style.display = 'block';
+      }
+      this.value = '';
+    });
+
+    document.getElementById('p-images-file').addEventListener('change', async function() {
+      if (!this.files[0]) return;
+      const url = await uploadFile(this.files[0], document.getElementById('p-images-loading'), 'p-images');
+      if (url) {
+        const imgs = JSON.parse(document.getElementById('p-images').value || '[]');
+        imgs.push(url);
+        document.getElementById('p-images').value = JSON.stringify(imgs);
+        renderImagesGallery();
+      }
+      this.value = '';
+    });
+
+    function removeMainImage() {
+      document.getElementById('p-image').value = '';
+      document.getElementById('main-image-preview').style.display = 'none';
+      document.getElementById('main-image-img').src = '';
+    }
+
+    function renderImagesGallery() {
+      const gallery = document.getElementById('p-images-gallery');
+      const imgs = JSON.parse(document.getElementById('p-images').value || '[]');
+      if (!imgs.length) { gallery.innerHTML = ''; return; }
+      gallery.innerHTML = imgs.map((url, i) =>
+        `<div class="img-thumb-wrap"><img class="img-thumb" src="${url}"><button class="img-thumb-remove" onclick="removeImage(${i})">×</button></div>`
+      ).join('');
+    }
+
+    function removeImage(index) {
+      const imgs = JSON.parse(document.getElementById('p-images').value || '[]');
+      imgs.splice(index, 1);
+      document.getElementById('p-images').value = JSON.stringify(imgs);
+      renderImagesGallery();
+    }
+
     loadProducts();
     document.getElementById('product-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal('product-modal'); });
     document.getElementById('delete-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal('delete-modal'); });
+
+    function handleLogout() {
+      localStorage.removeItem('admin_token');
+      window.location.href = 'login.html';
+    }
   </script>
 </body>
 </html>

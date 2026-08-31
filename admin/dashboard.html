@@ -4,21 +4,30 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard — Fold Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="admin.css">
 </head>
 <body>
-  <header class="admin-header">
-    <span class="logo">Fold Admin</span>
-    <nav>
-      <a href="dashboard.html" class="active">Dashboard</a>
-      <a href="products.html">Products</a>
-      <a href="orders.html">Orders</a>
-    </nav>
-  
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="dashboard.html" class="logo">Fold</a>
+      <nav class="main-nav">
+        <a href="dashboard.html" class="active">Dashboard</a>
+        <a href="products.html">Products</a>
+        <a href="orders.html">Orders</a>
+      </nav>
+      <div class="header-right">
+        <span class="user-info" id="user-info"></span>
+        <button class="btn btn-sm btn-outline logout-btn" onclick="handleLogout()">Log Out</button>
+      </div>
+    </div>
   </header>
 
   <div class="container">
-    <h1 style="margin-bottom: 1.5rem;">Dashboard</h1>
+    <h1 class="page-title">Dashboard</h1>
+    <p class="page-subtitle">Store overview</p>
     <div class="stats-grid">
       <div class="stat-card"><div class="stat-label">Total Products</div><div class="stat-value" id="stat-products">—</div></div>
       <div class="stat-card"><div class="stat-label">Total Orders</div><div class="stat-value" id="stat-orders">—</div></div>
@@ -41,6 +50,11 @@
       }
     }
     loadDashboard();
+
+    function handleLogout() {
+      localStorage.removeItem('admin_token');
+      window.location.href = 'login.html';
+    }
   </script>
 </body>
 </html>
