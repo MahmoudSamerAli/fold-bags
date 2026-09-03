@@ -88,6 +88,8 @@ h5 { font-size: 1rem; }
 .section-header { text-align: center; margin-bottom: 2.5rem; }
 .section-header h2 { margin-bottom: 0.4rem; }
 .section-header p { color: var(--text-light); }
+.section-link { display: inline-block; margin-top: 1.2rem; font-weight: 600; color: var(--accent); }
+.section-link:hover { text-decoration: underline; }
 
 .mt-2 { margin-top: 1rem; }
 .mt-3 { margin-top: 1.5rem; }
@@ -209,6 +211,37 @@ h5 { font-size: 1rem; }
   transition: all var(--transition);
 }
 .cart-badge.visible { opacity: 1; transform: scale(1); }
+
+.wishlist-btn-header {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text);
+  transition: opacity var(--transition);
+}
+.wishlist-btn-header:hover { opacity: 0.7; }
+.wishlist-btn-header svg { width: 22px; height: 22px; }
+.wishlist-badge {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 3px;
+  background: var(--accent);
+  color: var(--white);
+  font-size: 0.6rem;
+  font-weight: 600;
+  border-radius: 50%;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+.wishlist-page { padding: 3rem 0 5rem; }
+.wishlist-page .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.75rem; }
 
 .hamburger { display: none; flex-direction: column; gap: 5px; padding: 4px; margin-left: 0.5rem; }
 .hamburger span { display: block; width: 22px; height: 1.5px; background: var(--text); transition: all var(--transition); }

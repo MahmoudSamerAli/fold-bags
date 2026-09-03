@@ -1,0 +1,9 @@
+# Copy this file to `.dev.vars` for LOCAL development only.
+# `.dev.vars` is gitignored — never commit it.
+#
+# `wrangler pages dev` reads these vars automatically and exposes them
+# on `env` inside your Pages Functions (used by /api/admin/login).
+# Production uses the Cloudflare Pages secret with the SAME name.
+
+# The admin dashboard password (use a strong value).
+ADMIN_PASSWORD=change-me-local-password

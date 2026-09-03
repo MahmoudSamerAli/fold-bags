@@ -262,7 +262,7 @@ const Cart = {
 /* ==================== WISHLIST ==================== */
 const Wishlist = {
   getItems() { try { return JSON.parse(localStorage.getItem('fold_wishlist')) || []; } catch { return []; } },
-  saveItems(items) { localStorage.setItem('fold_wishlist', JSON.stringify(items)); },
+  saveItems(items) { localStorage.setItem('fold_wishlist', JSON.stringify(items)); this.updateBadge(); },
   toggle(productId) {
     let items = this.getItems();
     const idx = items.indexOf(productId);
@@ -270,13 +270,41 @@ const Wishlist = {
     else items.push(productId);
     this.saveItems(items);
     this.updateUI(productId);
+    const page = window.location.pathname.split('/').pop() || 'index.html';
+    if (page === 'wishlist.html') this.renderPage();
     return idx === -1;
   },
   has(productId) { return this.getItems().includes(productId); },
+  updateBadge() {
+    const n = this.getItems().length;
+    document.querySelectorAll('.wishlist-badge').forEach(b => {
+      b.textContent = n;
+      b.style.display = n > 0 ? 'inline-flex' : 'none';
+    });
+  },
   updateUI(productId) {
     document.querySelectorAll(`.wishlist-btn[data-id="${productId}"]`).forEach(btn => {
       btn.classList.toggle('active', this.has(productId));
     });
+    this.updateBadge();
+  },
+  /* Dedicated wishlist page renderer */
+  renderPage() {
+    const grid = document.getElementById('wishlist-grid');
+    const empty = document.getElementById('wishlist-empty');
+    if (!grid) return;
+    const ids = this.getItems();
+    if (!ids.length) {
+      if (empty) empty.style.display = 'block';
+      grid.style.display = 'none';
+      this.updateBadge();
+      return;
+    }
+    if (empty) empty.style.display = 'none';
+    grid.style.display = 'grid';
+    const wished = products.filter(p => ids.includes(p.id));
+    if (wished.length) renderProductCards(wished, grid);
+    this.updateBadge();
   }
 };
 
@@ -746,6 +774,7 @@ function setActiveNav() {
 /* ==================== INIT ON LOAD ==================== */
 document.addEventListener('DOMContentLoaded', async () => {
   Cart.updateUI();
+  Wishlist.updateBadge();
   initMobileNav();
   initCartDrawer();
   setActiveNav();
@@ -753,7 +782,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const page = window.location.pathname.split('/').pop() || 'index.html';
 
   // Only product-dependent pages need the catalog loaded before rendering.
-  const needCatalog = ['index.html', '', 'shop.html', 'product.html', 'cart.html'].includes(page);
+  const needCatalog = ['index.html', '', 'shop.html', 'product.html', 'cart.html', 'wishlist.html'].includes(page);
 
   if (needCatalog) {
     const loader = document.querySelector('.catalog-loading');
@@ -765,6 +794,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (page === 'shop.html') initShopPage();
   if (page === 'product.html') initProductPage();
   if (page === 'cart.html') Cart.renderCartPage();
+  if (page === 'wishlist.html') Wishlist.renderPage();
   if (page === 'checkout.html') initCheckoutPage();
   if (page === 'confirmation.html') initConfirmationPage();
   if (page === 'faq.html') initFaqPage();
