@@ -1,6 +1,5 @@
 name = "fold"
 compatibility_date = "2024-12-01"
-pages_build_output_dir = "/"
 
 # ADMIN_PASSWORD is read from a Cloudflare Pages secret (encrypted variable),
 # NOT stored here. Set it in the Pages dashboard: Settings > Environment variables.
