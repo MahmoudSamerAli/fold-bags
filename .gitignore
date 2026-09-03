@@ -1,19 +1,18 @@
-# Images (add your own)
-/images/
+# Dependencies / build artifacts
+node_modules
+dist
+.wrangler
 
-# OS files
+# Env & secrets
+.env
+.env.local
+.env.*.local
+
+# Logs & OS files
+*.log
 .DS_Store
-Thumbs.db
-desktop.ini
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# Node
-node_modules/
-
-# Secrets
-fold-admin-*.json
+# Editor
+.vscode
+.idea
+*.local

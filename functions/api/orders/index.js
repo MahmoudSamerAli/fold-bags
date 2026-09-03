@@ -1,47 +1,65 @@
-import { getRows, appendRow, updateRow, json, error } from '../../_lib/sheets.js';
-
+// Fold — POST /api/orders
+// Stores a Cash on Delivery order in Cloudflare D1.
 export async function onRequest(context) {
   const { request, env } = context;
-  if (request.method === 'POST') return handlePost(request, env);
-  return error('Method not allowed', 405);
+
+  if (request.method === 'GET') return getOrders(env);
+  if (request.method === 'POST') return createOrder(request, env);
+
+  return json({ error: 'Method not allowed' }, 405);
 }
 
-async function handlePost(request, env) {
-  const body = await request.json();
-  const rows = await getRows(env, 'Orders');
-  const maxId = rows.reduce((max, r) => Math.max(max, Number(r.id) || 0), 0);
-  const now = new Date().toISOString();
-  await appendRow(env, 'Orders', {
-    id: String(maxId + 1),
-    order_id: body.order_id || '',
-    customer_name: body.customer_name || '',
-    customer_phone: body.customer_phone || '',
-    city: body.city || '',
-    address: body.address || '',
-    payment_method: body.payment_method || '',
-    items: typeof body.items === 'string' ? body.items : JSON.stringify(body.items || []),
-    subtotal: String(body.subtotal || 0),
-    shipping: String(body.shipping || 0),
-    total: String(body.total || 0),
-    status: 'pending',
-    created_at: now,
-    updated_at: now,
-  });
-
-  const items = typeof body.items === 'string' ? JSON.parse(body.items) : (body.items || []);
-  if (items.length > 0) {
-    const products = await getRows(env, 'Products');
-    for (const item of items) {
-      const product = products.find(p => String(p.id) === String(item.id));
-      if (product && product.stock !== undefined) {
-        const currentStock = Number(product.stock) || 0;
-        const newStock = Math.max(0, currentStock - (item.qty || 1));
-        const data = { ...product, stock: String(newStock), updated_at: new Date().toISOString() };
-        delete data._row;
-        await updateRow(env, 'Products', product._row, data);
-      }
-    }
+async function createOrder(request, env) {
+  let body;
+  try {
+    body = await request.json();
+  } catch (e) {
+    return json({ error: 'Invalid JSON body' }, 400);
   }
 
-  return json({ success: true, order_id: body.order_id }, 201);
+  const orderId = (body.order_id || '').toString().trim();
+  const name = (body.customer_name || '').toString().trim();
+  const phone = (body.customer_phone || '').toString().trim();
+  const city = (body.city || '').toString().trim();
+  const address = (body.address || '').toString().trim();
+
+  if (!orderId || !name || !phone || !address) {
+    return json({ error: 'Missing required fields' }, 400);
+  }
+
+  const items = Array.isArray(body.items) ? body.items : [];
+  const subtotal = Number(body.subtotal) || 0;
+  const shipping = Number(body.shipping) || 0;
+  const total = Number(body.total) || 0;
+
+  try {
+    await env.DB.prepare(
+      `INSERT INTO orders (order_id, customer_name, customer_phone, city, address, payment_method, items, subtotal, shipping, total, status)
+       VALUES (?, ?, ?, ?, ?, 'cod', ?, ?, ?, ?, 'pending')`
+    )
+      .bind(orderId, name, phone, city, address, JSON.stringify(items), subtotal, shipping, total)
+      .run();
+
+    return json({ success: true, order_id: orderId }, 201);
+  } catch (err) {
+    return json({ error: 'Could not save order' }, 500);
+  }
+}
+
+async function getOrders(env) {
+  try {
+    const { results } = await env.DB
+      .prepare(`SELECT * FROM orders ORDER BY created_at DESC LIMIT 100`)
+      .all();
+    return json(results || []);
+  } catch (err) {
+    return json({ error: 'Could not read orders' }, 500);
+  }
+}
+
+function json(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { 'Content-Type': 'application/json' }
+  });
 }
