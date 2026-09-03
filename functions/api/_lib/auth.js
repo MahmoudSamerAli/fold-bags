@@ -16,13 +16,15 @@ export async function getBearer(request) {
   return header.startsWith('Bearer ') ? header.slice(7).trim() : null;
 }
 
-// Compact constant-time-ish string compare using HMAC strings (Web Crypto aware).
-// Kept synchronous for the Workers runtime.
+// Constant-time string compare — avoids timing oracles on length or content.
 export function safeEqual(a, b) {
   if (typeof a !== 'string' || typeof b !== 'string') return false;
-  if (a.length !== b.length) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  const maxLen = Math.max(a.length, b.length);
+  if (maxLen === 0) return true;
+  const ap = a.padEnd(maxLen, '\0');
+  const bp = b.padEnd(maxLen, '\0');
+  let diff = a.length ^ b.length;
+  for (let i = 0; i < maxLen; i++) diff |= ap.charCodeAt(i) ^ bp.charCodeAt(i);
   return diff === 0;
 }
 

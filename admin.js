@@ -23,6 +23,27 @@ const PER = 30;
 const prices = (n) => Number(n || 0).toLocaleString('en-EG') + ' EGP';
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
+let editingColors = [];
+
+function renderColorTags() {
+  const container = document.getElementById('color-tags');
+  if (!container) return;
+  container.innerHTML = editingColors.map((c, i) =>
+    `<span class="color-tag"><span class="swatch" style="background:${esc(c.hex)}"></span>${esc(c.name)}<button type="button" class="remove-color" data-index="${i}">&times;</button></span>`
+  ).join('');
+}
+
+function addEditingColor(name, hex) {
+  if (!name.trim()) return;
+  editingColors.push({ name: name.trim(), hex });
+  renderColorTags();
+}
+
+function removeEditingColor(index) {
+  editingColors.splice(index, 1);
+  renderColorTags();
+}
+
 function showToast(msg) {
   const t = document.getElementById('admin-toast');
   t.textContent = msg;
@@ -102,7 +123,7 @@ async function loadOrders() {
   const data = await res.json();
   currentOrders = data.orders || [];
   renderOrders(currentOrders);
-  renderOrderStats(data.total || 0);
+  renderOrderStats(data.total || 0, data.stats || {});
   renderPager(Math.ceil((data.total || 0) / PER));
 }
 
@@ -140,12 +161,9 @@ function renderOrders(orders) {
   }).join('');
 }
 
-function renderOrderStats(total) {
-  const stats = {};
-  currentOrders.forEach((o) => { stats[o.payment_status] = (stats[o.payment_status] || 0) + 1; });
+function renderOrderStats(total, stats) {
   const paid = stats.paid || 0, unpaid = stats.unpaid || 0, refunded = stats.refunded || 0;
-  const sum = (pred) => currentOrders.filter(pred).reduce((a, o) => a + (Number(o.total) || 0), 0);
-  const outstanding = sum((o) => o.payment_status !== 'paid' && o.payment_status !== 'refunded');
+  const outstanding = Number(stats.outstanding) || 0;
   document.getElementById('order-stats').innerHTML = `
     <div class="stat-card"><div class="num">${total}</div><div class="lbl">Total orders</div></div>
     <div class="stat-card"><div class="num">${paid}</div><div class="lbl">Paid</div></div>
@@ -208,7 +226,12 @@ function renderProducts() {
 
   const tbody = document.getElementById('products-tbody');
   if (!list.length) { tbody.innerHTML = '<tr><td colspan="7" class="muted">No products.</td></tr>'; return; }
-  tbody.innerHTML = list.map((p) => `
+  tbody.innerHTML = list.map((p) => {
+    const s = Number(p.stock);
+    const stockClass = s <= 0 ? 'qty-badge' : (s <= 3 ? 'qty-badge-low' : '');
+    const stockColor = s <= 0 ? 'var(--red)' : (s <= 3 ? '#c98a2d' : '');
+    const stockTag = s <= 0 ? ' <span class="badge b-cancelled">OUT</span>' : (s <= 3 ? ' <span class="badge b-pending">LOW</span>' : '');
+    return `
     <tr data-pid="${p.id}">
       <td>${p.image ? `<img class="thumb" src="${esc(p.image)}" alt="" onerror="this.style.visibility='hidden'">` : ''}</td>
       <td>
@@ -217,13 +240,14 @@ function renderProducts() {
       </td>
       <td>${CATEGORY_LABELS[p.category] || p.category}</td>
       <td>${prices(p.price)}${p.old_price ? ' <span class="muted" style="text-decoration:line-through">' + prices(p.old_price) + '</span>' : ''}</td>
-      <td class="${Number(p.stock) <= 0 ? 'qty-badge' : ''}" style="color:${Number(p.stock) <= 0 ? 'var(--red)' : ''}">${p.stock}</td>
+      <td class="${stockClass}" style="color:${stockColor}">${p.stock}${stockTag}</td>
       <td>${p.active ? '<span class="badge b-paid">ACTIVE</span>' : '<span class="badge b-cancelled">HIDDEN</span>'}</td>
       <td style="white-space:nowrap">
         <button class="btn btn-outline" data-act="edit" data-id="${p.id}">Edit</button>
         <button class="btn btn-outline" data-act="${p.active ? 'hide' : 'show'}" data-id="${p.id}">${p.active ? 'Hide' : 'Show'}</button>
       </td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 }
 
 document.addEventListener('click', async (e) => {
@@ -257,6 +281,9 @@ function openProductModal(p) {
   document.getElementById('p-stock').value = p ? p.stock : 0;
   document.getElementById('p-image').value = p ? p.image : '';
   document.getElementById('p-description').value = p ? p.description : '';
+  editingColors = p && Array.isArray(p.colors) ? p.colors.map(c => ({ ...c })) : [];
+  document.getElementById('p-sizes').value = p && Array.isArray(p.sizes) ? p.sizes.join(', ') : 'OS';
+  renderColorTags();
   document.getElementById('product-modal').classList.add('open');
 }
 
@@ -274,8 +301,8 @@ async function saveProduct(e) {
     stock: Number(document.getElementById('p-stock').value || 0),
     image: document.getElementById('p-image').value.trim(),
     description: document.getElementById('p-description').value.trim(),
-    colors: [{ name: 'Default', hex: '#111111' }],
-    sizes: ['OS']
+    colors: editingColors.length ? editingColors : [{ name: 'Default', hex: '#111111' }],
+    sizes: document.getElementById('p-sizes').value.split(',').map(s => s.trim()).filter(Boolean)
   };
   try {
     const url = id ? `${API.products}/${id}` : API.products;
@@ -344,6 +371,18 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('product-cancel').addEventListener('click', closeProductModal);
   document.getElementById('product-modal').addEventListener('click', (e) => { if (e.target.id === 'product-modal') closeProductModal(); });
   document.getElementById('product-form').addEventListener('submit', saveProduct);
+
+  document.getElementById('add-color-btn').addEventListener('click', () => {
+    const nameInput = document.getElementById('color-name');
+    const hexInput = document.getElementById('color-hex');
+    addEditingColor(nameInput.value, hexInput.value);
+    nameInput.value = '';
+    nameInput.focus();
+  });
+  document.getElementById('color-tags').addEventListener('click', (e) => {
+    const btn = e.target.closest('.remove-color');
+    if (btn) removeEditingColor(Number(btn.dataset.index));
+  });
 
   const bounce = () => { ordersPage = 1; loadOrders(); };
   document.getElementById('order-search').addEventListener('input', bounce);

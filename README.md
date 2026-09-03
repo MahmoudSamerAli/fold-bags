@@ -84,6 +84,15 @@ This store does **not** offer online payments. Checkout always uses **Cash on De
 
 The admin dashboard tracks whether each COD payment has been **collected** per order (`unpaid` / `paid` / `refunded`). This ledger is designed to be extended when online payment methods are added in the future.
 
+## Inventory & stock
+
+- Placing an order **decrements** the relevant products' `stock` server-side and atomically (D1 batch), clamped at `0`.
+- Cancelling an order (admin status → `cancelled`) **restores** the corresponding stock.
+- The storefront shows a **SOLD OUT** badge (and disables Add to Cart) when `stock` is `0`, and an "Only X left" low-stock note when `stock <= 3`.
+- Cart quantities are **clamped to available stock** — the cart `+` button disables at the cap and the backend rejects any quantity above stock.
+- The order totals are **recomputed server-side** from product prices — the API does not trust client-supplied subtotal/shipping/total.
+- A per-phone **cooldown** on `POST /api/orders` guards against rapid-fire automated submissions.
+
 ## Database (Cloudflare D1)
 
 Migrations (run in order):
@@ -120,7 +129,7 @@ node scripts/seed-products-generate.js
 Open `/admin.html`, enter the admin password, and manage:
 
 - **Orders** — search/filter, change order status (`pending → confirmed → shipped → delivered → cancelled`) and mark COD payment status.
-- **Products** — add/edit/hide products. Changes reflect on the storefront immediately (no redeploy).
+- **Products** — add/edit/hide products. The product form supports **colors** (name + hex swatches) and **sizes** (comma-separated) in addition to name, brand, category, price, old price, stock, image, and description. Changes reflect on the storefront immediately (no redeploy).
 - **Payments** — COD collection ledger, track paid/unpaid/refunded per order.
 
 ### Set the admin password
@@ -172,9 +181,11 @@ Each seed product:
 
 ## Contact
 
-- Phone: 01099997543
+- Phone: 0101143370
 - Email: mahmoud.samer2005@gmail.com
 - Location: Cairo, Egypt
+
+> The phone number is centralized in `script.js` (`CONTACT_PHONE`) and injected into every page footer / the contact page via `<p data-phone>`, keeping the displayed number in sync with the WhatsApp order line (`WHATSAPP_NUMBER`).
 
 ## License
 

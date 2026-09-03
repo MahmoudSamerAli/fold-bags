@@ -5,7 +5,8 @@
 'use strict';
 
 /* ==================== CONFIG ==================== */
-const WHATSAPP_NUMBER = '201027993246';
+const WHATSAPP_NUMBER = '201011433705';
+const CONTACT_PHONE = '0101143370';
 const FREE_SHIPPING_MIN = 1000;
 const SHIPPING_FEE = 50;
 
@@ -17,6 +18,10 @@ const applyTheme = (theme) => {
   try { localStorage.setItem(THEME_KEY, theme); } catch {}
 };
 const toggleTheme = () => applyTheme(getSavedTheme() === 'dark' ? 'light' : 'dark');
+
+function applyContactPhone() {
+  document.querySelectorAll('[data-phone]').forEach(el => { el.textContent = CONTACT_PHONE; });
+}
 
 function updateToggleButtons() {
   const active = getSavedTheme() === 'dark';
@@ -66,6 +71,13 @@ const CATEGORIES = (typeof FOLD_CATEGORIES !== 'undefined') ? FOLD_CATEGORIES : 
 ];
 const getProductById = (id) => products.find(p => p.id === Number(id));
 
+// Returns the current page name without a .html extension.
+// Handles Cloudflare clean URLs (/shop -> "shop") and trailing "/" or "" -> "index".
+function currentPage() {
+  const raw = window.location.pathname.split('/').pop() || 'index';
+  return raw.replace(/\.html$/, '') || 'index';
+}
+
 async function initCatalog() {
   if (catalogLoaded) return products;
   try {
@@ -84,6 +96,8 @@ async function initCatalog() {
 }
 
 /* ==================== HELPERS ==================== */
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const escJS = (s) => String(s ?? '').replace(/[\\"']/g, (c) => ({ '\\': '\\\\', '"': '\\"', "'": "\\'" }[c]));
 const formatPrice = (price) => price.toLocaleString('en-EG') + ' EGP';
 
 function showToast(message) {
@@ -91,15 +105,20 @@ function showToast(message) {
   if (existing) existing.remove();
   const toast = document.createElement('div');
   toast.className = 'toast show';
-  toast.innerHTML = `<span class="toast-accent">${message}</span>`;
+  const span = document.createElement('span');
+  span.className = 'toast-accent';
+  span.textContent = message;
+  toast.appendChild(span);
   document.body.appendChild(toast);
   setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 400); }, 2500);
 }
 
 function generateOrderId() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  const bytes = new Uint8Array(8);
+  crypto.getRandomValues(bytes);
   let result = '#';
-  for (let i = 0; i < 8; i++) result += chars.charAt(Math.floor(Math.random() * chars.length));
+  for (let i = 0; i < 8; i++) result += chars[bytes[i] % chars.length];
   return result;
 }
 
@@ -125,8 +144,17 @@ const Cart = {
 
   updateQty(index, qty) {
     const items = this.getItems();
-    if (qty <= 0) items.splice(index, 1);
-    else items[index].qty = qty;
+    if (qty <= 0) { items.splice(index, 1); this.saveItems(items); return; }
+    const item = items[index];
+    if (!item) return;
+    const product = getProductById(item.id);
+    const maxQty = product && Number(product.stock) > 0 ? Number(product.stock) : null;
+    if (maxQty !== null && qty > maxQty) {
+      item.qty = maxQty;
+      showToast('Quantity limited to available stock');
+    } else {
+      item.qty = qty;
+    }
     this.saveItems(items);
   },
 
@@ -135,6 +163,13 @@ const Cart = {
   getShipping() { return this.getSubtotal() >= FREE_SHIPPING_MIN ? 0 : SHIPPING_FEE; },
   getTotal() { return this.getSubtotal() + this.getShipping(); },
   clear() { localStorage.removeItem('fold_cart'); this.updateUI(); },
+
+  isOutOfStock() {
+    return this.getItems().some((item) => {
+      const product = getProductById(item.id);
+      return product && Number(product.stock) <= 0;
+    });
+  },
 
   updateUI() { this.updateBadge(); this.renderDrawer(); this.renderCartPage(); this.renderCheckoutSummary(); },
 
@@ -156,24 +191,30 @@ const Cart = {
       if (totalEl) totalEl.textContent = '0 EGP';
       return;
     }
-    container.innerHTML = items.map((item, i) => `
-      <div class="cart-drawer-item">
-        <img src="${item.image}" alt="${item.name}" class="cart-drawer-item-image">
+    container.innerHTML = items.map((item, i) => {
+      const prod = getProductById(item.id);
+      const maxQty = prod && Number(prod.stock) > 0 ? Number(prod.stock) : null;
+      const atMax = maxQty !== null && item.qty >= maxQty;
+      const isOos = prod && Number(prod.stock) <= 0;
+      return `
+      <div class="cart-drawer-item${isOos ? ' oos' : ''}">
+        <img src="${esc(item.image)}" alt="${esc(item.name)}" class="cart-drawer-item-image">
         <div class="cart-drawer-item-details">
-          <div class="cart-drawer-item-name">${item.name}</div>
-          <div class="cart-drawer-item-variant">${item.color}${item.size ? ', ' + item.size : ''}</div>
+          <div class="cart-drawer-item-name">${esc(item.name)}</div>
+          <div class="cart-drawer-item-variant">${esc(item.color)}${item.size ? ', ' + esc(item.size) : ''}</div>
+          ${isOos ? '<div class="oos-note">Out of stock</div>' : ''}
           <div class="cart-drawer-item-bottom">
             <div class="cart-drawer-item-qty">
               <button onclick="Cart.updateQty(${i}, ${item.qty - 1})">−</button>
               <span>${item.qty}</span>
-              <button onclick="Cart.updateQty(${i}, ${item.qty + 1})">+</button>
+              <button onclick="Cart.updateQty(${i}, ${item.qty + 1})" ${atMax ? 'disabled' : ''}>+</button>
             </div>
             <span class="cart-drawer-item-price">${formatPrice(item.price * item.qty)}</span>
           </div>
           <button class="cart-drawer-item-remove" onclick="Cart.remove(${i})">Remove</button>
         </div>
-      </div>
-    `).join('');
+      </div>`;
+    }).join('');
     if (totalEl) totalEl.textContent = formatPrice(this.getTotal());
   },
 
@@ -209,24 +250,30 @@ const Cart = {
     }
     if (emptyEl) emptyEl.style.display = 'none';
     if (layoutEl) layoutEl.style.display = 'grid';
-    container.innerHTML = items.map((item, i) => `
-      <div class="cart-item">
-        <img src="${item.image}" alt="${item.name}" class="cart-item-image">
+    container.innerHTML = items.map((item, i) => {
+      const prod = getProductById(item.id);
+      const maxQty = prod && Number(prod.stock) > 0 ? Number(prod.stock) : null;
+      const atMax = maxQty !== null && item.qty >= maxQty;
+      const isOos = prod && Number(prod.stock) <= 0;
+      return `
+      <div class="cart-item${isOos ? ' oos' : ''}">
+        <img src="${esc(item.image)}" alt="${esc(item.name)}" class="cart-item-image">
         <div class="cart-item-details">
-          <h3>${item.name}</h3>
-          <p>${item.color}${item.size ? ' — ' + item.size : ''}</p>
+          <h3>${esc(item.name)}</h3>
+          <p>${esc(item.color)}${item.size ? ' — ' + esc(item.size) : ''}</p>
+          ${isOos ? '<p class="oos-note">Out of stock — please remove</p>' : ''}
           <div class="cart-item-actions">
             <div class="cart-item-qty">
               <button onclick="Cart.updateQty(${i}, ${item.qty - 1})">−</button>
               <span>${item.qty}</span>
-              <button onclick="Cart.updateQty(${i}, ${item.qty + 1})">+</button>
+              <button onclick="Cart.updateQty(${i}, ${item.qty + 1})" ${atMax ? 'disabled' : ''}>+</button>
             </div>
             <button class="cart-item-remove" onclick="Cart.remove(${i})">Remove</button>
           </div>
         </div>
         <div class="cart-item-total">${formatPrice(item.price * item.qty)}</div>
-      </div>
-    `).join('');
+      </div>`;
+    }).join('');
     if (subtotalEl) subtotalEl.textContent = formatPrice(this.getSubtotal());
     if (shippingEl) shippingEl.textContent = this.getShipping() === 0 ? 'Free' : formatPrice(this.getShipping());
     if (totalEl) totalEl.textContent = formatPrice(this.getTotal());
@@ -243,16 +290,20 @@ const Cart = {
       container.innerHTML = '<p style="color: var(--text-light);">Your cart is empty</p>';
       return;
     }
-    container.innerHTML = items.map(item => `
-      <div class="checkout-summary-item">
-        <img src="${item.image}" alt="${item.name}">
+    container.innerHTML = items.map(item => {
+      const prod = getProductById(item.id);
+      const isOos = prod && Number(prod.stock) <= 0;
+      return `
+      <div class="checkout-summary-item${isOos ? ' oos' : ''}">
+        <img src="${esc(item.image)}" alt="${esc(item.name)}">
         <div class="checkout-summary-item-info">
-          <h4>${item.name}</h4>
-          <p>${item.color}${item.size ? ', ' + item.size : ''} × ${item.qty}</p>
+          <h4>${esc(item.name)}</h4>
+          <p>${esc(item.color)}${item.size ? ', ' + esc(item.size) : ''} × ${item.qty}</p>
+          ${isOos ? '<p class="oos-note">Out of stock</p>' : ''}
         </div>
         <span class="checkout-summary-item-price">${formatPrice(item.price * item.qty)}</span>
-      </div>
-    `).join('');
+      </div>`;
+    }).join('');
     if (subtotalEl) subtotalEl.textContent = formatPrice(this.getSubtotal());
     if (shippingEl) shippingEl.textContent = this.getShipping() === 0 ? 'Free' : formatPrice(this.getShipping());
     if (totalEl) totalEl.textContent = formatPrice(this.getTotal());
@@ -270,8 +321,8 @@ const Wishlist = {
     else items.push(productId);
     this.saveItems(items);
     this.updateUI(productId);
-    const page = window.location.pathname.split('/').pop() || 'index.html';
-    if (page === 'wishlist.html') this.renderPage();
+    const page = currentPage();
+    if (page === 'wishlist') this.renderPage();
     return idx === -1;
   },
   has(productId) { return this.getItems().includes(productId); },
@@ -314,21 +365,25 @@ function renderProductCards(productsArr, container) {
   const wishlistedIds = Wishlist.getItems();
   container.innerHTML = productsArr.map(p => {
     const isWish = wishlistedIds.includes(p.id);
+    const isSoldOut = p.stock <= 0;
+    const isLowStock = !isSoldOut && p.stock <= 3;
     return `
-    <div class="product-card" onclick="window.location.href='product.html?id=${p.id}'">
+    <div class="product-card${isSoldOut ? ' sold-out' : ''}" onclick="window.location.href='product.html?id=${p.id}'">
       <div class="product-card-image">
-        <img src="${p.image}" alt="${p.name}" loading="lazy">
+        ${isSoldOut ? '<span class="sold-out-badge">SOLD OUT</span>' : ''}
+        <img src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy">
         <button class="wishlist-btn${isWish ? ' active' : ''}" data-id="${p.id}"
           onclick="event.stopPropagation(); Wishlist.toggle(${p.id})" aria-label="Add to wishlist">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="${isWish ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
         </button>
-        <button class="btn btn-primary btn-sm add-to-cart-btn"
-          onclick="event.stopPropagation(); quickAdd(${p.id})" data-id="${p.id}">Add to Cart</button>
+        <button class="btn btn-primary btn-sm add-to-cart-btn${isSoldOut ? ' sold-out-btn' : ''}"
+          onclick="event.stopPropagation(); quickAdd(${p.id})" data-id="${p.id}" ${isSoldOut ? 'disabled' : ''}>${isSoldOut ? 'Sold Out' : 'Add to Cart'}</button>
       </div>
       <div class="product-card-body">
-        <div class="product-card-category">${p.brand}</div>
-        <div class="product-card-name">${p.name}</div>
+        <div class="product-card-category">${esc(p.brand)}</div>
+        <div class="product-card-name">${esc(p.name)}</div>
         <div class="product-card-price">${formatPrice(p.price)}</div>
+        ${isLowStock ? `<div class="product-card-stock low">Only ${p.stock} left</div>` : ''}
       </div>
     </div>`;
   }).join('');
@@ -336,9 +391,12 @@ function renderProductCards(productsArr, container) {
 
 function quickAdd(productId) {
   const product = getProductById(productId);
-  if (!product) return;
+  if (!product || product.stock <= 0) { showToast('This product is out of stock'); return; }
   const color = product.colors[0].name;
   const size = product.sizes[0];
+  const items = Cart.getItems();
+  const existing = items.find(i => i.id === product.id && i.color === color && i.size === size);
+  if (existing && existing.qty >= product.stock) { showToast('Cannot add more — stock limit reached'); return; }
   Cart.add(product, color, size, 1);
 }
 
@@ -398,8 +456,9 @@ async function saveOrderApi(payload) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
-    if (res.ok) return;
-  } catch (e) { /* offline fallback: proceed anyway */ }
+    const data = await res.json().catch(() => ({}));
+    return res.ok ? data : data;
+  } catch (e) { return null; }
 }
 
 /* ==================== PAGE: CHECKOUT (COD only) ==================== */
@@ -432,6 +491,7 @@ function initCheckoutPage() {
 
     const items = Cart.getItems();
     if (items.length === 0) { showToast('Your cart is empty'); return; }
+    if (Cart.isOutOfStock()) { showToast('Some items in your cart are out of stock'); return; }
 
     if (!valid) return;
 
@@ -452,14 +512,23 @@ function initCheckoutPage() {
     submitBtn.disabled = true;
     submitBtn.textContent = 'Placing Order...';
 
-    sessionStorage.setItem('fold_last_order', JSON.stringify({ items, total: Cart.getTotal() }));
+    const saved = await saveOrderApi(payload);
+    if (!saved || !saved.success) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Place Order — COD';
+      showToast((saved && saved.error) ? saved.error : 'Could not save order. Please try again.');
+      return;
+    }
 
-    const waMsg = buildWhatsAppMessage(payload.customer_name, payload.customer_phone, payload.address, payload.city, items, payload.total);
+    // Use the server-recomputed totals rather than trusting client math.
+    const serverTotal = saved.total;
+    sessionStorage.setItem('fold_last_order', JSON.stringify({ items, total: serverTotal }));
 
-    await saveOrderApi(payload);   // store in D1 (non-blocking on failure)
+    const waMsg = buildWhatsAppMessage(payload.customer_name, payload.customer_phone, payload.address, payload.city, items, serverTotal);
+
     Cart.clear();
     openWhatsApp(waMsg);
-    window.location.href = `confirmation.html?order=${encodeURIComponent(orderId)}&total=${payload.total}`;
+    window.location.href = `confirmation.html?order=${encodeURIComponent(orderId)}&total=${serverTotal}`;
   });
 
   const updateTotal = () => {
@@ -484,12 +553,12 @@ function initConfirmationPage() {
     <div class="confirmation-content">
       <div class="confirmation-icon">✓</div>
       <h1>Thank You!</h1>
-      <p class="order-number">Order <strong>${orderId}</strong></p>
+      <p class="order-number">Order <strong>${esc(orderId)}</strong></p>
       <p>Your order has been placed successfully. We've sent the details via WhatsApp and will confirm shortly. You'll pay <strong>Cash on Delivery</strong> when your order arrives.</p>
       <div class="confirmation-details">
         <h3>Order Summary</h3>
         ${items.length > 0 ? items.map(item => `
-          <div class="confirmation-item"><span>${item.name} (${item.color}${item.size ? ', ' + item.size : ''}) × ${item.qty}</span><span>${formatPrice(item.price * item.qty)}</span></div>
+          <div class="confirmation-item"><span>${esc(item.name)} (${esc(item.color)}${item.size ? ', ' + esc(item.size) : ''}) × ${item.qty}</span><span>${formatPrice(item.price * item.qty)}</span></div>
         `).join('') : '<p style="color: var(--text-light);">Order details have been sent.</p>'}
         <div class="confirmation-item" style="font-weight:600;border-top:1px solid var(--border);padding-top:.75rem;margin-top:.5rem;"><span>Total</span><span>${total ? formatPrice(Number(total)) : ''}</span></div>
       </div>
@@ -576,30 +645,30 @@ function initProductPage() {
   let quantity = 1;
 
   function renderProduct() {
-    const imagesHtml = `<img src="${product.image}" alt="${product.name}" class="product-thumbnail active" onclick="switchImage(this, '${product.image}')">`;
+    const imagesHtml = `<img src="${esc(product.image)}" alt="${esc(product.name)}" class="product-thumbnail active" onclick="switchImage(this, '${escJS(product.image)}')">`;
     const colorsHtml = product.colors.map(c =>
-      `<button class="color-swatch${c.name === selectedColor ? ' active' : ''}" style="background:${c.hex}" title="${c.name}" onclick="selectColor('${c.name}', this)"></button>`
+      `<button class="color-swatch${esc(c.name) === selectedColor ? ' active' : ''}" style="background:${esc(c.hex)}" title="${esc(c.name)}" onclick="selectColor('${escJS(c.name)}', this)"></button>`
     ).join('');
     const sizesHtml = product.sizes.map(s =>
-      `<button class="size-btn${s === selectedSize ? ' active' : ''}" onclick="selectSize('${s}', this)">${s}</button>`
+      `<button class="size-btn${s === selectedSize ? ' active' : ''}" onclick="selectSize('${escJS(s)}', this)">${esc(s)}</button>`
     ).join('');
 
     container.innerHTML = `
       <div class="product-images">
         <div class="product-main-image" onclick="openLightbox(document.getElementById('main-image').src)">
-          <img src="${product.image}" alt="${product.name}" id="main-image">
+          <img src="${esc(product.image)}" alt="${esc(product.name)}" id="main-image">
         </div>
         <div class="product-thumbnails"></div>
       </div>
       <div class="product-info">
-        <div class="product-info-category">${product.brand} · ${product.category}</div>
-        <h1>${product.name}</h1>
+        <div class="product-info-category">${esc(product.brand)} · ${esc(product.category)}</div>
+        <h1>${esc(product.name)}</h1>
         <div class="product-info-price">${formatPrice(product.price)}</div>
-        <div class="product-info-stock"><span class="stock-ok">In Stock</span></div>
-        <p class="product-info-description">${product.description}</p>
+        <div class="product-info-stock">${product.stock === 0 ? '<span class="stock-none">Out of Stock</span>' : product.stock <= 3 ? '<span class="stock-low">Only ' + product.stock + ' left</span>' : '<span class="stock-ok">In Stock</span>'}</div>
+        <p class="product-info-description">${esc(product.description)}</p>
         <div class="product-options">
           <div class="option-group">
-            <span class="option-label">Color: ${selectedColor}</span>
+            <span class="option-label">Color: ${esc(selectedColor)}</span>
             <div class="color-swatches">${colorsHtml}</div>
           </div>
           <div class="option-group">
@@ -610,13 +679,13 @@ function initProductPage() {
             <span class="option-label">Quantity</span>
             <div class="quantity-selector">
               <button class="quantity-btn" onclick="updateQty(-1)">−</button>
-              <input type="number" class="quantity-input" value="${quantity}" min="1" max="99" id="qty-input" onchange="setQty(this.value)">
+              <input type="number" class="quantity-input" value="${quantity}" min="1" max="${product.stock}" id="qty-input" onchange="setQty(this.value)">
               <button class="quantity-btn" onclick="updateQty(1)">+</button>
             </div>
           </div>
         </div>
         <div style="display:flex;gap:.75rem;">
-          <button class="btn btn-primary add-to-cart-detail" onclick="addFromDetail()" style="flex:1;">Add to Cart — ${formatPrice(product.price * quantity)}</button>
+          <button class="btn btn-primary add-to-cart-detail" onclick="addFromDetail()" style="flex:1;" ${product.stock === 0 ? 'disabled' : ''}>${product.stock === 0 ? 'Out of Stock' : 'Add to Cart — ' + formatPrice(product.price * quantity)}</button>
           <button class="wishlist-btn-detail${Wishlist.has(product.id) ? ' active' : ''}" onclick="Wishlist.toggle(${product.id}); this.classList.toggle('active');" aria-label="Toggle wishlist">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="${Wishlist.has(product.id) ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
           </button>
@@ -647,6 +716,7 @@ function initProductPage() {
       const input = document.getElementById('qty-input');
       let val = (parseInt(input.value) || 1) + delta;
       if (val < 1) val = 1;
+      if (val > product.stock) val = product.stock;
       input.value = val;
       quantity = val;
       updateDetailButton();
@@ -654,16 +724,24 @@ function initProductPage() {
     window.setQty = function(val) {
       let v = parseInt(val);
       if (isNaN(v) || v < 1) v = 1;
+      if (v > product.stock) v = product.stock;
       quantity = v;
       document.getElementById('qty-input').value = v;
       updateDetailButton();
     };
     window.addFromDetail = function() {
+      if (product.stock <= 0) { showToast('This product is out of stock'); return; }
+      const items = Cart.getItems();
+      const existing = items.find(i => i.id === product.id && i.color === selectedColor && i.size === selectedSize);
+      const alreadyInCart = existing ? existing.qty : 0;
+      if (alreadyInCart + quantity > product.stock) { showToast('Cannot add more — stock limit reached'); return; }
       Cart.add(product, selectedColor, selectedSize, quantity);
     };
     function updateDetailButton() {
       const btn = document.querySelector('.add-to-cart-detail');
-      if (btn) btn.textContent = `Add to Cart — ${formatPrice(product.price * quantity)}`;
+      if (!btn) return;
+      if (product.stock === 0) { btn.textContent = 'Out of Stock'; btn.disabled = true; }
+      else { btn.textContent = `Add to Cart — ${formatPrice(product.price * quantity)}`; btn.disabled = false; }
     }
   }
 
@@ -765,9 +843,10 @@ function initCartDrawer() {
 }
 
 function setActiveNav() {
-  const page = window.location.pathname.split('/').pop() || 'index.html';
+  const page = currentPage();
   document.querySelectorAll('.main-nav a, .mobile-nav a').forEach(link => {
-    if (link.getAttribute('href') === page) link.classList.add('active');
+    const href = (link.getAttribute('href') || '').replace(/\.html$/, '').replace(/^\.\/|\/$/g, '');
+    if (href === page) link.classList.add('active');
   });
 }
 
@@ -778,11 +857,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   initMobileNav();
   initCartDrawer();
   setActiveNav();
+  applyContactPhone();
 
-  const page = window.location.pathname.split('/').pop() || 'index.html';
+  const page = currentPage();
 
   // Only product-dependent pages need the catalog loaded before rendering.
-  const needCatalog = ['index.html', '', 'shop.html', 'product.html', 'cart.html', 'wishlist.html'].includes(page);
+  const needCatalog = ['index', 'shop', 'product', 'cart', 'wishlist'].includes(page);
 
   if (needCatalog) {
     const loader = document.querySelector('.catalog-loading');
@@ -790,22 +870,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     await initCatalog();
   }
 
-  if (page === 'index.html' || page === '') initIndexPage();
-  if (page === 'shop.html') initShopPage();
-  if (page === 'product.html') initProductPage();
-  if (page === 'cart.html') Cart.renderCartPage();
-  if (page === 'wishlist.html') Wishlist.renderPage();
-  if (page === 'checkout.html') initCheckoutPage();
-  if (page === 'confirmation.html') initConfirmationPage();
-  if (page === 'faq.html') initFaqPage();
-  if (page === 'contact.html') initContactForm();
-
-  const nForm = document.getElementById('newsletter-form');
-  if (nForm) nForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    showToast('Thanks for subscribing!');
-    nForm.reset();
-  });
+  if (page === 'index') initIndexPage();
+  if (page === 'shop') initShopPage();
+  if (page === 'product') initProductPage();
+  if (page === 'cart') Cart.renderCartPage();
+  if (page === 'wishlist') Wishlist.renderPage();
+  if (page === 'checkout') initCheckoutPage();
+  if (page === 'confirmation') initConfirmationPage();
+  if (page === 'faq') initFaqPage();
+  if (page === 'contact') initContactForm();
 });
 
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLightbox(); });

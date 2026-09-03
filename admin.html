@@ -160,6 +160,16 @@
           <div class="field"><label>Image path</label><input type="text" id="p-image" placeholder="images/Example.jpeg"></div>
         </div>
         <div class="field"><label>Description</label><textarea id="p-description" rows="3"></textarea></div>
+        <div class="field"><label>Sizes (comma-separated)</label><input type="text" id="p-sizes" placeholder="e.g. OS, S, M, L"></div>
+        <div class="field">
+          <label>Colors</label>
+          <div id="color-tags" class="color-tags"></div>
+          <div class="add-color-row">
+            <input type="text" id="color-name" placeholder="Name" style="width:8rem">
+            <input type="color" id="color-hex" value="#111111" style="height:34px;width:34px;padding:2px;cursor:pointer">
+            <button type="button" class="btn btn-outline btn-sm" id="add-color-btn">Add</button>
+          </div>
+        </div>
         <div class="modal-actions">
           <button type="button" class="btn btn-outline" id="product-cancel">Cancel</button>
           <button type="submit" class="btn btn-primary" id="product-save">Save</button>

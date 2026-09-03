@@ -43,6 +43,17 @@ async function listOrders(request, context) {
       `SELECT * FROM orders ${whereSql} ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?`
     ).bind(...bind, per, offset).all();
 
+    let stats = { paid: 0, unpaid: 0, refunded: 0, outstanding: 0 };
+    try {
+      const statsRow = await context.env.DB.prepare(
+        `SELECT payment_status, COUNT(*) AS cnt, SUM(total) AS sum_total FROM orders ${whereSql} GROUP BY payment_status`
+      ).bind(...bind).all();
+      for (const row of (statsRow.results || [])) {
+        if (row.payment_status in stats) stats[row.payment_status] = row.cnt;
+        if (row.payment_status !== 'paid' && row.payment_status !== 'refunded') stats.outstanding += (Number(row.sum_total) || 0);
+      }
+    } catch (e) { /* stats query failed — fall back to zeros */ }
+
     const rows = (results.results || []).map((r) => ({
       ...r,
       items: safeJson(r.items),
@@ -50,7 +61,7 @@ async function listOrders(request, context) {
       sizes: safeJson(r.sizes)
     }));
 
-    return json({ orders: rows, total: countRow ? countRow.total : 0, page, per });
+    return json({ orders: rows, total: countRow ? countRow.total : 0, stats, page, per });
   } catch (e) {
     return json({ error: 'Could not read orders' }, 500);
   }
@@ -89,9 +100,31 @@ async function updateStatus(request, context) {
     ).bind(...bind).run();
 
     if (result.meta.changes === 0) return json({ error: 'Order not found' }, 404);
+
+    if (body.status === 'cancelled') {
+      await restoreStock(context.env, orderId);
+    }
+
     return json({ success: true });
   } catch (e) {
     return json({ error: 'Could not update order' }, 500);
+  }
+}
+
+async function restoreStock(env, orderId) {
+  try {
+    const order = await env.DB.prepare('SELECT items FROM orders WHERE order_id = ?').bind(orderId).first();
+    const items = safeJson(order ? order.items : '[]');
+    if (!Array.isArray(items) || !items.length) return;
+    const stmts = items
+      .filter((item) => item && item.id != null)
+      .map((item) =>
+        env.DB.prepare('UPDATE products SET stock = stock + ? WHERE id = ?')
+          .bind(Number(item.qty) || 0, item.id)
+      );
+    if (stmts.length) await env.DB.batch(stmts);
+  } catch (e) {
+    // Best-effort restore; do not fail the status update if this errors.
   }
 }
 

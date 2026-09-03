@@ -361,6 +361,23 @@ h5 { font-size: 1rem; }
 }
 .product-card:hover .add-to-cart-btn { transform: translate(-50%, 0); }
 
+.sold-out-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: var(--error);
+  color: var(--white);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 4px 10px;
+  border-radius: 4px;
+  z-index: 2;
+}
+.product-card.sold-out { opacity: 0.65; }
+.product-card.sold-out .product-card-image img { filter: grayscale(0.4); }
+.add-to-cart-btn.sold-out-btn { background: var(--text-light); cursor: not-allowed; }
+
 .product-card-body { padding: 1rem 1.1rem 1.2rem; }
 .product-card-category {
   font-size: 0.68rem;
@@ -379,6 +396,7 @@ h5 { font-size: 1rem; }
   overflow: hidden;
 }
 .product-card-price { font-weight: 600; font-size: 0.98rem; }
+.product-card-stock.low { color: #c98a2d; font-size: 0.78rem; margin-top: 0.3rem; font-weight: 600; }
 
 /* ---------- 10. CATEGORY CARDS ---------- */
 .category-grid {
@@ -533,7 +551,10 @@ h5 { font-size: 1rem; }
 .cart-item-qty { display: inline-flex; align-items: center; border: 1px solid var(--border); }
 .cart-item-qty button { width: 32px; height: 34px; font-size: 1rem; }
 .cart-item-qty button:hover { background: var(--bg-alt); }
+.cart-item-qty button:disabled { opacity: 0.4; cursor: not-allowed; background: transparent; }
 .cart-item-qty span { min-width: 34px; text-align: center; }
+.cart-item.oos, .cart-drawer-item.oos, .checkout-summary-item.oos { opacity: 0.6; }
+.oos-note { color: var(--error); font-size: 0.78rem; font-weight: 600; margin: 0.25rem 0; }
 .cart-item-remove { color: var(--error); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
 .cart-item-total { font-weight: 600; }
 
@@ -728,6 +749,7 @@ h5 { font-size: 1rem; }
 .cart-drawer-item-bottom { display: flex; align-items: center; justify-content: space-between; }
 .cart-drawer-item-qty { display: inline-flex; align-items: center; border: 1px solid var(--border); }
 .cart-drawer-item-qty button { width: 28px; height: 30px; font-size: 0.95rem; }
+.cart-drawer-item-qty button:disabled { opacity: 0.4; cursor: not-allowed; background: transparent; }
 .cart-drawer-item-qty span { min-width: 30px; text-align: center; font-size: 0.9rem; }
 .cart-drawer-item-price { font-weight: 600; font-size: 0.9rem; }
 .cart-drawer-item-remove { color: var(--error); font-size: 0.72rem; text-transform: uppercase; margin-top: 0.4rem; }

@@ -39,6 +39,7 @@ export async function onRequest(context) {
     await env.DB.prepare('INSERT INTO admin_sessions (token, expires_at) VALUES (?, ?)')
       .bind(token, expiresAt)
       .run();
+    await env.DB.prepare("DELETE FROM admin_sessions WHERE expires_at < datetime('now')").run();
   } catch (e) {
     return json({ error: 'Could not create session' }, 500);
   }
