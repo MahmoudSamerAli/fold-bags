@@ -23,6 +23,7 @@ export async function onRequest(context) {
   const expected = env.ADMIN_PASSWORD || '';
 
   if (!expected) {
+    console.error('[login] ADMIN_PASSWORD secret is not configured (env.ADMIN_PASSWORD is empty)');
     return json({ error: 'Admin password not configured' }, 500);
   }
   if (!safeEqual(password, expected)) {
@@ -36,11 +37,16 @@ export async function onRequest(context) {
   const expiresAt = new Date(Date.now() + SESSION_HOURS * 60 * 60 * 1000).toISOString();
 
   try {
+    if (!env.DB) {
+      console.error('[login] D1 binding (env.DB) is not configured');
+      return json({ error: 'Database binding not configured' }, 500);
+    }
     await env.DB.prepare('INSERT INTO admin_sessions (token, expires_at) VALUES (?, ?)')
       .bind(token, expiresAt)
       .run();
     await env.DB.prepare("DELETE FROM admin_sessions WHERE expires_at < datetime('now')").run();
   } catch (e) {
+    console.error('[login] Could not store session:', e && e.message ? e.message : String(e));
     return json({ error: 'Could not create session' }, 500);
   }
 
