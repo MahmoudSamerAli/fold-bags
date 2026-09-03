@@ -46,7 +46,6 @@ fold-bags/
 ├── favicon.svg
 ├── robots.txt
 ├── sitemap.xml
-└── wrangler.toml         # Cloudflare Pages / D1 config
 ```
 
 ## Running Locally
@@ -59,12 +58,17 @@ python -m http.server 8080
 
 Then visit `http://localhost:8080`.
 
-> **Note:** The storefront now loads products from `/api/products` (D1-backed) and orders need the Pages Function + D1. To test these locally, run with Wrangler so Functions and D1 work:
+> **Note:** The storefront now loads products from `/api/products` (D1-backed) and orders need the Pages Function + D1. The project ships **without a `wrangler.toml`** — the D1 binding (`DB` → `fold`) and the `ADMIN_PASSWORD` secret are configured in the Cloudflare dashboard (see *Deployment*). To test Functions and D1 locally, create a local (git-ignored) `wrangler.toml` with the D1 binding, then run with Wrangler:
 >
 > ```bash
-> wrangler d1 execute fold --local --file=./migrations/0001_orders.sql
-> wrangler d1 execute fold --local --file=./migrations/0002_admin.sql
-> wrangler d1 execute fold --local --file=./migrations/0003_seed_products.sql
+> # local wrangler.toml (DO NOT commit):
+> # name = "fold"
+> # compatibility_date = "2026-05-01"
+> # [[d1_databases]]
+> # binding = "DB"
+> # database_name = "fold"
+> # database_id = "<database id>"
+>
 > npx wrangler pages dev . --d1 DB=fold
 > ```
 >
@@ -145,7 +149,7 @@ The password is **not** stored in the repo. Set it as a Cloudflare Pages **secre
 
 1. Push the repo to GitHub.
 2. In Cloudflare Pages, create a project and connect the GitHub repo `MahmoudSamerAli/fold-bags`.
-3. **Build settings:** No build command, output directory `/` (root). Cloudflare auto-detects the Pages Functions.
+3. **Build settings:** No build command, no build output directory (leave the **Root directory** at the repo root `/`). The repo has **no `wrangler.toml`**, so Cloudflare's v2 root-directory strategy serves the static files and auto-detects the `functions/` directory. Do **not** set `wrangler.toml`'s `pages_build_output_dir` to `/` — an absolute path resolves outside the repository and fails the build.
 4. Bind the D1 database:
    - Settings → Functions → D1 database bindings → add binding named `DB`, select the `fold` database.
 5. Set the `ADMIN_PASSWORD` secret (see above).

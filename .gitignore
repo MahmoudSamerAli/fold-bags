@@ -9,6 +9,10 @@ dist
 .env.*.local
 .dev.vars
 
+# Local Cloudflare Pages config (prod config lives in the dashboard)
+wrangler.toml
+wrangler.json
+
 # Logs & OS files
 *.log
 .DS_Store
