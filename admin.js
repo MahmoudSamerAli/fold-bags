@@ -6,6 +6,7 @@
 
 const API = {
   login: '/api/admin/login',
+  logout: '/api/admin/logout',
   orders: '/api/admin/orders',
   products: '/api/admin/products'
 };
@@ -65,6 +66,7 @@ function handleUnauthorized() {
 }
 
 function logout() {
+  fetch(API.logout, { method: 'POST' }).catch(() => {});
   authToken = '';
   localStorage.removeItem(TOKEN_KEY);
   document.getElementById('login-view').style.display = 'flex';

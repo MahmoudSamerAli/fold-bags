@@ -16,6 +16,14 @@ export async function getBearer(request) {
   return header.startsWith('Bearer ') ? header.slice(7).trim() : null;
 }
 
+// Reads a named cookie value from a request's Cookie header.
+export function getCookie(request, name) {
+  const header = request.headers.get('Cookie') || '';
+  const match = header.match(new RegExp('(?:^|;\\s*)' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '=([^;]*)'));
+  if (!match) return null;
+  try { return decodeURIComponent(match[1]); } catch (e) { return match[1]; }
+}
+
 // Constant-time string compare — avoids timing oracles on length or content.
 export function safeEqual(a, b) {
   if (typeof a !== 'string' || typeof b !== 'string') return false;

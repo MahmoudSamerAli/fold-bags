@@ -44,7 +44,11 @@ export async function onRequest(context) {
     return json({ error: 'Could not create session' }, 500);
   }
 
-  return json({ token, expires_at: expiresAt });
+  const body = { token, expires_at: expiresAt };
+  const res = json(body);
+  const cookie = `fold_admin=${token}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=${SESSION_HOURS * 60 * 60}`;
+  res.headers.append('Set-Cookie', cookie);
+  return res;
 }
 
 function generateToken() {

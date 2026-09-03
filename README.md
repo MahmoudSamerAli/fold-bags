@@ -31,11 +31,13 @@ fold-bags/
 │   └── products.js       # Seed catalog (used to populate D1; offline fallback)
 ├── images/               # Product images
 ├── functions/
+│   ├── admin.html.js      # /admin.html gate (login form → dashboard)
+│   ├── admin/             # /admin gate (login form → dashboard)
 │   ├── api/
-│   │   ├── products/     # Public: GET active products
-│   │   ├── orders/       # Public: POST (place order) + GET (recent)
-│   │   ├── admin/        # Protected: login, orders, products
-│   │   └── _lib/auth.js  # Shared bearer-session auth
+│   │   ├── products/      # Public: GET active products
+│   │   ├── orders/        # Public: POST (place order) + GET (recent)
+│   │   ├── admin/         # Protected: login, logout, orders, products
+│   │   └── _lib/          # Shared auth + admin gate helpers
 │   └── ...
 ├── migrations/           # D1 schema + seed
 ├── scripts/              # Tooling (product seed generator)
@@ -120,7 +122,8 @@ node scripts/seed-products-generate.js
 | `GET` | `/api/products` | Public | List active products (storefront) |
 | `POST` | `/api/orders` | Public | Store a COD order |
 | `GET` | `/api/orders` | Public | List recent orders (latest 100) |
-| `POST` | `/api/admin/login` | — | Verify password, issue session token |
+| `POST` | `/api/admin/login` | — | Verify password, issue session token + cookie |
+| `POST` | `/api/admin/logout` | Bearer/cookie | Invalidate session, clear cookie |
 | `GET` | `/api/admin/orders` | Bearer | List orders (paged, filterable) |
 | `PATCH` | `/api/admin/orders` | Bearer | Update order `status` / `payment_status` |
 | `GET` | `/api/admin/products` | Bearer | List all products |
@@ -135,6 +138,8 @@ Open `/admin.html`, enter the admin password, and manage:
 - **Orders** — search/filter, change order status (`pending → confirmed → shipped → delivered → cancelled`) and mark COD payment status.
 - **Products** — add/edit/hide products. The product form supports **colors** (name + hex swatches) and **sizes** (comma-separated) in addition to name, brand, category, price, old price, stock, image, and description. Changes reflect on the storefront immediately (no redeploy).
 - **Payments** — COD collection ledger, track paid/unpaid/refunded per order.
+
+**Protection:** Open **`/admin`** (or `/admin.html`) to reach the admin area. A Pages Function (`functions/admin.html.js` + `functions/admin/index.js`, sharing `functions/api/_lib/adminGate.js`) serves a **password login form** until a valid admin session exists, and serves the actual dashboard (`admin.html`) only once authenticated. Unauthorized visitors never see any admin data. On successful login the API sets an **HttpOnly, Secure, SameSite=Strict** session cookie (`fold_admin`) and returns a bearer token; the dashboard is served only when that session verifies against D1 (`admin_sessions`). Logging out (`/api/admin/logout`) deletes the server session row and clears the cookie. The `/api/admin/*` endpoints remain individually protected by the bearer token.
 
 ### Set the admin password
 
