@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Fold — Admin Dashboard</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+  <!-- ============ LOGIN ============ -->
+  <div class="admin-login" id="login-view">
+    <form class="login-card" id="login-form">
+      <h1>Fold <span style="color:var(--accent)">Admin</span></h1>
+      <p class="sub">Sign in to manage orders, products, and payments.</p>
+      <label for="password">Password</label>
+      <input type="password" id="password" autocomplete="current-password" placeholder="Enter admin password" required>
+      <p class="login-error" id="login-error"></p>
+      <button type="submit" class="btn btn-primary" id="login-btn" style="width:100%">Sign In</button>
+    </form>
+  </div>
+
+  <!-- ============ DASHBOARD ============ -->
+  <div class="admin-shell" id="admin-view">
+    <div class="admin-topbar">
+      <div class="brand">Fold <span>Admin</span></div>
+      <div class="topbar-actions">
+        <span class="muted" id="session-hint"></span>
+        <button class="btn btn-outline" id="logout-btn">Log out</button>
+      </div>
+    </div>
+
+    <div class="admin-layout">
+      <nav class="admin-nav">
+        <button data-panel="orders" class="active">▤ Orders</button>
+        <button data-panel="products">▦ Products</button>
+        <button data-panel="payments">◉ Payments</button>
+      </nav>
+
+      <main class="admin-main">
+
+        <!-- ======== ORDERS ======== -->
+        <section class="panel active" id="panel-orders">
+          <div class="panel-head">
+            <h2>Orders</h2>
+          </div>
+          <div class="stat-cards" id="order-stats"></div>
+          <div class="toolbar">
+            <input type="search" id="order-search" placeholder="Search name / phone / ID" style="min-width:220px">
+            <select id="order-status-filter">
+              <option value="">All statuses</option>
+              <option value="pending">Pending</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="shipped">Shipped</option>
+              <option value="delivered">Delivered</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+            <select id="order-payment-filter">
+              <option value="">All payments</option>
+              <option value="unpaid">Unpaid</option>
+              <option value="paid">Paid</option>
+              <option value="refunded">Refunded</option>
+            </select>
+          </div>
+          <div class="table-wrap">
+            <table class="admin-table" id="orders-table">
+              <thead>
+                <tr>
+                  <th>Order</th><th>Customer</th><th>Items</th><th>Total</th>
+                  <th>Payment</th><th>Status</th><th>Date</th><th>COD</th>
+                </tr>
+              </thead>
+              <tbody id="orders-tbody"><tr><td colspan="8" class="muted">Loading…</td></tr></tbody>
+            </table>
+          </div>
+          <div class="toolbar" style="margin-top:1rem" id="orders-pager"></div>
+        </section>
+
+        <!-- ======== PRODUCTS ======== -->
+        <section class="panel" id="panel-products">
+          <div class="panel-head">
+            <h2>Products</h2>
+            <button class="btn btn-primary" id="add-product-btn">+ Add Product</button>
+          </div>
+          <div class="toolbar">
+            <input type="search" id="product-search" placeholder="Search products" style="min-width:220px">
+            <select id="product-cat-filter">
+              <option value="">All categories</option>
+              <option value="crossbody">Crossbody</option>
+              <option value="totes">Tote Bags</option>
+              <option value="backpacks">Backpacks</option>
+            </select>
+            <label class="muted" style="display:flex;align-items:center;gap:0.3rem">
+              <input type="checkbox" id="show-inactive"> Show inactive
+            </label>
+          </div>
+          <div class="table-wrap">
+            <table class="admin-table" id="products-table">
+              <thead>
+                <tr>
+                  <th></th><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Active</th><th></th>
+                </tr>
+              </thead>
+              <tbody id="products-tbody"><tr><td colspan="7" class="muted">Loading…</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ======== PAYMENTS ======== -->
+        <section class="panel" id="panel-payments">
+          <div class="panel-head">
+            <h2>Payments</h2>
+          </div>
+          <div class="stat-cards" id="payment-stats"></div>
+          <p class="muted">
+            Fold currently accepts <span class="badge b-cod">Cash on Delivery</span> only.
+            Payments are tracked per order — mark a COD payment as <strong>Paid</strong> once collected.
+            This ledger is structured to support online payment methods in the future.
+          </p>
+          <div class="table-wrap">
+            <table class="admin-table" id="payments-table">
+              <thead>
+                <tr>
+                  <th>Order</th><th>Customer</th><th>Amount</th><th>Method</th><th>COD Status</th><th>Date</th>
+                </tr>
+              </thead>
+              <tbody id="payments-tbody"><tr><td colspan="6" class="muted">Loading…</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- ======== PRODUCT MODAL ======== -->
+  <div class="modal-backdrop" id="product-modal">
+    <div class="modal">
+      <h3 id="product-modal-title">Add Product</h3>
+      <form id="product-form">
+        <input type="hidden" id="p-id">
+        <div class="field"><label>Name *</label><input type="text" id="p-name" required></div>
+        <div class="row-2">
+          <div class="field"><label>Brand</label><input type="text" id="p-brand" placeholder="e.g. Calvin Klein"></div>
+          <div class="field"><label>Category *</label>
+            <select id="p-category">
+              <option value="crossbody">Crossbody</option>
+              <option value="totes">Tote Bags</option>
+              <option value="backpacks">Backpacks</option>
+            </select>
+          </div>
+        </div>
+        <div class="row-2">
+          <div class="field"><label>Price (EGP) *</label><input type="number" id="p-price" min="0" required></div>
+          <div class="field"><label>Old Price (optional)</label><input type="number" id="p-old-price" min="0"></div>
+        </div>
+        <div class="row-2">
+          <div class="field"><label>Stock *</label><input type="number" id="p-stock" min="0" value="0" required></div>
+          <div class="field"><label>Image path</label><input type="text" id="p-image" placeholder="images/Example.jpeg"></div>
+        </div>
+        <div class="field"><label>Description</label><textarea id="p-description" rows="3"></textarea></div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" id="product-cancel">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="product-save">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast" id="admin-toast"></div>
+
+  <script src="admin.js"></script>
+</body>
+</html>

@@ -53,9 +53,11 @@ function initTheme() {
 }
 initTheme();
 
-/* ==================== PRODUCTS (static) ==================== */
-// Pulled from data/products.js (loaded before script.js on every page)
+/* ==================== PRODUCTS ==================== */
+// Products now come from the public /api/products endpoint (D1-backed).
+// data/products.js (FOLD_PRODUCTS) is kept as the offline fallback / seed.
 let products = (typeof FOLD_PRODUCTS !== 'undefined') ? FOLD_PRODUCTS.slice() : [];
+let catalogLoaded = false;
 const CATEGORIES = (typeof FOLD_CATEGORIES !== 'undefined') ? FOLD_CATEGORIES : [
   { slug: 'all', label: 'All Products' },
   { slug: 'backpacks', label: 'Backpacks' },
@@ -63,6 +65,23 @@ const CATEGORIES = (typeof FOLD_CATEGORIES !== 'undefined') ? FOLD_CATEGORIES : 
   { slug: 'crossbody', label: 'Crossbody' }
 ];
 const getProductById = (id) => products.find(p => p.id === Number(id));
+
+async function initCatalog() {
+  if (catalogLoaded) return products;
+  try {
+    const res = await fetch('/api/products');
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data.products) && data.products.length) {
+        products = data.products;
+      }
+    }
+  } catch (e) {
+    // Offline or API unavailable — keep the bundled FOLD_PRODUCTS fallback.
+  }
+  catalogLoaded = true;
+  return products;
+}
 
 /* ==================== HELPERS ==================== */
 const formatPrice = (price) => price.toLocaleString('en-EG') + ' EGP';
@@ -725,13 +744,22 @@ function setActiveNav() {
 }
 
 /* ==================== INIT ON LOAD ==================== */
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   Cart.updateUI();
   initMobileNav();
   initCartDrawer();
   setActiveNav();
 
   const page = window.location.pathname.split('/').pop() || 'index.html';
+
+  // Only product-dependent pages need the catalog loaded before rendering.
+  const needCatalog = ['index.html', '', 'shop.html', 'product.html', 'cart.html'].includes(page);
+
+  if (needCatalog) {
+    const loader = document.querySelector('.catalog-loading');
+    if (loader) loader.style.display = 'block';
+    await initCatalog();
+  }
 
   if (page === 'index.html' || page === '') initIndexPage();
   if (page === 'shop.html') initShopPage();

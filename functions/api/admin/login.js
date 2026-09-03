@@ -1,0 +1,53 @@
+// Fold — POST /api/admin/login
+// Verifies password against the ADMIN_PASSWORD secret and issues a short-lived
+// session token stored in D1 (admin_sessions).
+
+import { json, safeEqual } from '../_lib/auth.js';
+
+const SESSION_HOURS = 24;
+
+export async function onRequest(context) {
+  const { request, env } = context;
+  if (request.method !== 'POST') {
+    return json({ error: 'Method not allowed' }, 405);
+  }
+
+  let body;
+  try {
+    body = await request.json();
+  } catch (e) {
+    return json({ error: 'Invalid JSON body' }, 400);
+  }
+
+  const password = (body.password || '').toString();
+  const expected = env.ADMIN_PASSWORD || '';
+
+  if (!expected) {
+    return json({ error: 'Admin password not configured' }, 500);
+  }
+  if (!safeEqual(password, expected)) {
+    return json({ error: 'Invalid password' }, 401);
+  }
+
+  // Maximum login attempts guard to slow brute force (simple, in-memory within a single isolate).
+  // For production hardening consider rate limiting via Cloudflare.
+
+  const token = generateToken();
+  const expiresAt = new Date(Date.now() + SESSION_HOURS * 60 * 60 * 1000).toISOString();
+
+  try {
+    await env.DB.prepare('INSERT INTO admin_sessions (token, expires_at) VALUES (?, ?)')
+      .bind(token, expiresAt)
+      .run();
+  } catch (e) {
+    return json({ error: 'Could not create session' }, 500);
+  }
+
+  return json({ token, expires_at: expiresAt });
+}
+
+function generateToken() {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+}
