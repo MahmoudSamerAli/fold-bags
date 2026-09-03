@@ -296,7 +296,7 @@ function quickAdd(productId) {
 }
 
 /* ==================== WHATSAPP (COD) ==================== */
-function generateWhatsAppUrl(customerName, customerPhone, address, city, items, total) {
+function buildWhatsAppMessage(customerName, customerPhone, address, city, items, total) {
   const itemLines = items.map((item, i) => {
     const variant = [item.color, item.size].filter(Boolean).join(', ');
     return `${i + 1}. ${item.name}${variant ? ' (' + variant + ')' : ''} x ${item.qty} - ${formatPrice(item.price * item.qty)}`;
@@ -317,15 +317,24 @@ function generateWhatsAppUrl(customerName, customerPhone, address, city, items, 
     `*Delivery:* ${Cart.getShipping() === 0 ? 'Free' : formatPrice(Cart.getShipping())}`,
     `*Total:* ${formatPrice(total)}`
   ].join('\n');
-  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+  return message;
 }
 
-function openWhatsApp(waUrl) {
+function openWhatsApp(message) {
+  const encoded = encodeURIComponent(message);
   const isMobile = /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini|Windows Phone/i.test(navigator.userAgent);
-  if (isMobile) window.open(waUrl, '_blank');
-  else {
+
+  // Mobile: deep-link straight into the WhatsApp app
+  // Desktop: open WhatsApp Web directly (no intermediate page)
+  const url = isMobile
+    ? `https://api.whatsapp.com/send?phone=${WHATSAPP_NUMBER}&text=${encoded}`
+    : `https://web.whatsapp.com/send?phone=${WHATSAPP_NUMBER}&text=${encoded}`;
+
+  if (isMobile) {
+    window.open(url, '_blank');
+  } else {
     const link = document.createElement('a');
-    link.href = waUrl;
+    link.href = url;
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
     document.body.appendChild(link);
@@ -398,11 +407,11 @@ function initCheckoutPage() {
 
     sessionStorage.setItem('fold_last_order', JSON.stringify({ items, total: Cart.getTotal() }));
 
-    const waUrl = generateWhatsAppUrl(payload.customer_name, payload.customer_phone, payload.address, payload.city, items, payload.total);
+    const waMsg = buildWhatsAppMessage(payload.customer_name, payload.customer_phone, payload.address, payload.city, items, payload.total);
 
     await saveOrderApi(payload);   // store in D1 (non-blocking on failure)
     Cart.clear();
-    openWhatsApp(waUrl);
+    openWhatsApp(waMsg);
     window.location.href = `confirmation.html?order=${encodeURIComponent(orderId)}&total=${payload.total}`;
   });
 
@@ -661,8 +670,7 @@ function initContactForm() {
     const email = document.getElementById('contact-email').value.trim();
     const message = document.getElementById('contact-message').value.trim();
     const text = `*New Inquiry - Fold*\n\n*Name:* ${name || 'Not provided'}\n*Email:* ${email || 'Not provided'}\n*Message:* ${message || 'Not provided'}`;
-    const waUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`;
-    openWhatsApp(waUrl);
+    openWhatsApp(text);
     showToast('Message sent via WhatsApp!');
     form.reset();
   });
