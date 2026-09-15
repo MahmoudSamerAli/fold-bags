@@ -1,16 +1,16 @@
 # Fold — E-Commerce (Cash on Delivery)
 
-Minimal bags for the modern journey. A static storefront built with **HTML, CSS, and JavaScript only**, deployed on **Cloudflare Pages**, with **Cash on Delivery** as the only payment method. Includes a password-protected **admin dashboard** for managing orders, products, and payments.
+Minimal bags for the modern journey. A static storefront built with **HTML, CSS, and JavaScript only**, deployed on **Cloudflare Pages**, with **Cash on Delivery** as the only payment method. Includes an **admin dashboard** (gated by **Cloudflare Access** / Zero Trust) for managing orders, products, and payments.
 
 ## Tech Stack
 
-| Layer           | Technology                                                                 |
-| --------------- | -------------------------------------------------------------------------- |
-| Frontend        | HTML + CSS + vanilla JS (no framework, no build step)                      |
-| Product data    | Cloudflare D1 (served via `/api/products`), seeded from `data/products.js` |
-| Order storage   | Cloudflare Pages Function + Cloudflare D1 (SQLite)                         |
-| Admin dashboard | Static `admin.html` + protected `/api/admin/*` Functions                   |
-| Deployment      | Cloudflare Pages (static) + GitHub                                         |
+| Layer           | Technology                                                                              |
+| --------------- | --------------------------------------------------------------------------------------- |
+| Frontend        | HTML + CSS + vanilla JS (no framework, no build step)                                   |
+| Product data    | Cloudflare D1 (served via `/api/products`), seeded from `data/products.js`              |
+| Order storage   | Cloudflare Pages Function + Cloudflare D1 (SQLite)                                      |
+| Admin dashboard | Static `admin.html` + `/api/admin/*` Functions, gated by Cloudflare Access (Zero Trust) |
+| Deployment      | Cloudflare Pages (static) + GitHub                                                      |
 
 ## Project Structure
 
@@ -31,13 +31,12 @@ fold-bags/
 │   └── products.js       # Seed catalog (used to populate D1; offline fallback)
 ├── images/               # Product images
 ├── functions/
-│   ├── admin.html.js      # /admin.html gate (login form → dashboard)
-│   ├── admin/             # /admin gate (login form → dashboard)
+│   ├── admin/             # /admin → serves admin.html (gated by Cloudflare Access)
 │   ├── api/
 │   │   ├── products/      # Public: GET active products
 │   │   ├── orders/        # Public: POST (place order) + GET (recent)
-│   │   ├── admin/         # Protected: login, logout, orders, products
-│   │   └── _lib/          # Shared auth + admin gate helpers
+│   │   ├── admin/         # Gated by Cloudflare Access: orders, products, payments
+│   │   └── _lib/          # Shared response helpers
 │   └── ...
 ├── migrations/           # D1 schema + seed
 ├── scripts/
@@ -66,7 +65,7 @@ python -m http.server 8080
 
 Then visit `http://localhost:8080`.
 
-> **Note:** The storefront now loads products from `/api/products` (D1-backed) and orders need the Pages Function + D1. The project ships **without a `wrangler.toml`** — the D1 binding (`DB` → `fold`) and the `ADMIN_PASSWORD` secret are configured in the Cloudflare dashboard (see _Deployment_). To test Functions and D1 locally, create a local (git-ignored) `wrangler.toml` with the D1 binding, then run with Wrangler:
+> **Note:** The storefront now loads products from `/api/products` (D1-backed) and orders need the Pages Function + D1. The project ships **without a `wrangler.toml`** — the D1 binding (`DB` → `fold`) is configured in the Cloudflare dashboard (see _Deployment_). Access control for the admin area is enforced by **Cloudflare Access** at the edge, so the Functions need no admin secrets. To test Functions and D1 locally, create a local (git-ignored) `wrangler.toml` with the D1 binding, then run with Wrangler:
 >
 > ```bash
 > # local wrangler.toml (DO NOT commit):
@@ -134,6 +133,7 @@ Migrations (run in order):
 wrangler d1 execute fold --remote --file=./migrations/0001_orders.sql      # orders table
 wrangler d1 execute fold --remote --file=./migrations/0002_admin.sql       # products + payment_status + sessions
 wrangler d1 execute fold --remote --file=./migrations/0003_seed_products.sql # seed 47 products
+wrangler d1 execute fold --remote --file=./migrations/0004_remove_admin_sessions.sql # drop sessions (Cloudflare Access sole gate)
 ```
 
 The seed SQL is generated from `data/products.js`:
@@ -144,38 +144,34 @@ node scripts/seed-products-generate.js
 
 ## API
 
-| Method   | Endpoint                  | Auth          | Description                                   |
-| -------- | ------------------------- | ------------- | --------------------------------------------- |
-| `GET`    | `/api/products`           | Public        | List active products (storefront)             |
-| `POST`   | `/api/orders`             | Public        | Store a COD order                             |
-| `GET`    | `/api/orders`             | Public        | List recent orders (latest 100)               |
-| `POST`   | `/api/admin/login`        | —             | Verify password, issue session token + cookie |
-| `POST`   | `/api/admin/logout`       | Bearer/cookie | Invalidate session, clear cookie              |
-| `GET`    | `/api/admin/orders`       | Bearer        | List orders (paged, filterable)               |
-| `PATCH`  | `/api/admin/orders`       | Bearer        | Update order `status` / `payment_status`      |
-| `GET`    | `/api/admin/products`     | Bearer        | List all products                             |
-| `POST`   | `/api/admin/products`     | Bearer        | Create a product                              |
-| `PATCH`  | `/api/admin/products/:id` | Bearer        | Update a product                              |
-| `DELETE` | `/api/admin/products/:id` | Bearer        | Soft-delete a product (hide)                  |
+| Method   | Endpoint                  | Auth              | Description                              |
+| -------- | ------------------------- | ----------------- | ---------------------------------------- |
+| `GET`    | `/api/products`           | Public            | List active products (storefront)        |
+| `POST`   | `/api/orders`             | Public            | Store a COD order                        |
+| `GET`    | `/api/orders`             | Public            | List recent orders (latest 100)          |
+| `GET`    | `/api/admin/orders`       | Cloudflare Access | List orders (paged, filterable)          |
+| `PATCH`  | `/api/admin/orders`       | Cloudflare Access | Update order `status` / `payment_status` |
+| `GET`    | `/api/admin/products`     | Cloudflare Access | List all products                        |
+| `POST`   | `/api/admin/products`     | Cloudflare Access | Create a product                         |
+| `PATCH`  | `/api/admin/products/:id` | Cloudflare Access | Update a product                         |
+| `DELETE` | `/api/admin/products/:id` | Cloudflare Access | Soft-delete a product (hide)             |
 
 ## Admin Dashboard
 
-Open `/admin.html`, enter the admin password, and manage:
+Open **`/admin`** to manage:
 
 - **Orders** — search/filter, change order status (`pending → confirmed → shipped → delivered → cancelled`) and mark COD payment status.
 - **Products** — add/edit/hide products. The product form supports **colors** (name + hex swatches) and **sizes** (comma-separated) in addition to name, brand, category, price, old price, stock, image, and description. Changes reflect on the storefront immediately (no redeploy).
 - **Payments** — COD collection ledger, track paid/unpaid/refunded per order.
 
-**Protection:** Open **`/admin`** (or `/admin.html`) to reach the admin area. A Pages Function (`functions/admin.html.js` + `functions/admin/index.js`, sharing `functions/api/_lib/adminGate.js`) serves a **password login form** until a valid admin session exists, and serves the actual dashboard (`admin.html`) only once authenticated. Unauthorized visitors never see any admin data. On successful login the API sets an **HttpOnly, Secure, SameSite=Strict** session cookie (`fold_admin`) and returns a bearer token; the dashboard is served only when that session verifies against D1 (`admin_sessions`). Logging out (`/api/admin/logout`) deletes the server session row and clears the cookie. The `/api/admin/*` endpoints remain individually protected by the bearer token.
+**Protection:** Access control is handled entirely by **Cloudflare Access** (Zero Trust) at the edge. The Access application guards `/admin`, `/admin.html`, and `/api/admin/*`; requests that fail Access are redirected to the Cloudflare login before any Function or asset is served. The admin Functions themselves perform **no app-level auth** — the dashboard's `Log out` button points at the Cloudflare Access logout endpoint (`https://<access-team>.cloudflareaccess.com/cdn-cgi/access/logout`).
 
-### Set the admin password
+### Configure Cloudflare Access for the admin area
 
-The password is **not** stored in the repo. Set it as a Cloudflare Pages **secret** (encrypted variable):
-
-1. Cloudflare Pages dashboard → your project → **Settings → Environment variables**.
-2. Add **`ADMIN_PASSWORD`** with a strong value.
-3. (Optional) Deploy a new version or redeploy to push the secret.
-4. Session tokens are short-lived (24h) and stored in D1 (`admin_sessions`).
+1. Cloudflare dashboard → **Zero Trust** → **Access → Applications** → **Add an application** → **Self-hosted**.
+2. **Application domain:** `fold-bags.pages.dev` (or your custom domain). Add path `Include` rules for `/admin`, `/admin.html`, and `/api/admin/*`.
+3. **Policy:** `Allow`, Include the admin email(s) (e.g., `mahmoud.samer2005@gmail.com`). Session duration: 24h (or as desired).
+4. Add more admin emails by editing the policy's Include list. Only identities that pass Access can reach the dashboard or admin APIs.
 
 ## Deployment (Cloudflare Pages)
 
@@ -184,8 +180,9 @@ The password is **not** stored in the repo. Set it as a Cloudflare Pages **secre
 3. **Build settings:** No build command, no build output directory (leave the **Root directory** at the repo root `/`). The repo has **no `wrangler.toml`**, so Cloudflare's v2 root-directory strategy serves the static files and auto-detects the `functions/` directory. Do **not** set `wrangler.toml`'s `pages_build_output_dir` to `/` — an absolute path resolves outside the repository and fails the build.
 4. Bind the D1 database:
    - Settings → Functions → D1 database bindings → add binding named `DB`, select the `fold` database.
-5. Set the `ADMIN_PASSWORD` secret (see above).
-6. Deploy. Run the three migrations (`--remote`) at least once so products and the admin tables exist.
+5. Configure **Cloudflare Access** (Zero Trust) to guard `fold-bags.pages.dev/admin`, `/admin.html`, and `/api/admin/*` (see _Admin Dashboard → Configure Cloudflare Access_).
+6. Deploy. Run the three migrations (`--remote`) at least once so products and the admin tables exist. If you adopted Cloudflare Access as the sole admin gate after previously using the app password, also run the cleanup migration to drop the unused session table:
+   - `wrangler d1 execute fold --remote --file=./migrations/0004_remove_admin_sessions.sql`
 
 ## Adding / Editing Products
 

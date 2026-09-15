@@ -1,14 +1,11 @@
 // Fold — admin products.
 // GET  /api/admin/products   -> all products (including inactive)
 // POST /api/admin/products   -> create a product
-// All admin routes require a valid bearer session token.
+// Access is guarded by Cloudflare Access (Zero Trust) at the edge.
 
-import { json, requireAuth } from '../../_lib/auth.js';
+import { json } from '../../_lib/auth.js';
 
 export async function onRequest(context) {
-  const authError = await requireAuth(context);
-  if (authError) return authError;
-
   const { request } = context;
   if (request.method === 'GET') return listProducts(context);
   if (request.method === 'POST') return createProduct(request, context);

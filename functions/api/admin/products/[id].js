@@ -1,9 +1,9 @@
 // Fold — single product admin ops.
 // PATCH  /api/admin/products/:id   -> update product fields / active toggle
 // DELETE /api/admin/products/:id   -> soft delete (active = 0)
-// Requires a valid bearer session token.
+// Access is guarded by Cloudflare Access (Zero Trust) at the edge.
 
-import { json, requireAuth } from '../../_lib/auth.js';
+import { json } from '../../_lib/auth.js';
 
 const EDITABLE = [
   'name',
@@ -21,9 +21,6 @@ const EDITABLE = [
 const CATEGORIES = ['crossbody', 'totes', 'backpacks'];
 
 export async function onRequest(context) {
-  const authError = await requireAuth(context);
-  if (authError) return authError;
-
   const { request, env, params } = context;
   const id = Number(params.id);
   if (!Number.isInteger(id) || id <= 0) return json({ error: 'Invalid product id' }, 400);

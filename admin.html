@@ -9,33 +9,16 @@
     <link rel="stylesheet" href="admin.css" />
   </head>
   <body>
-    <!-- ============ LOGIN ============ -->
-    <div class="admin-login" id="login-view">
-      <form class="login-card" id="login-form">
-        <h1>Fold <span style="color: var(--accent)">Admin</span></h1>
-        <p class="sub">Sign in to manage orders, products, and payments.</p>
-        <label for="password">Password</label>
-        <input
-          type="password"
-          id="password"
-          autocomplete="current-password"
-          placeholder="Enter admin password"
-          required
-        />
-        <p class="login-error" id="login-error"></p>
-        <button type="submit" class="btn btn-primary" id="login-btn" style="width: 100%">
-          Sign In
-        </button>
-      </form>
-    </div>
-
     <!-- ============ DASHBOARD ============ -->
     <div class="admin-shell" id="admin-view">
       <div class="admin-topbar">
         <div class="brand">Fold <span>Admin</span></div>
         <div class="topbar-actions">
-          <span class="muted" id="session-hint"></span>
-          <button class="btn btn-outline" id="logout-btn">Log out</button>
+          <a
+            class="btn btn-outline"
+            href="https://fold-bags-pages.cloudflareaccess.com/cdn-cgi/access/logout"
+            >Log out</a
+          >
         </div>
       </div>
 

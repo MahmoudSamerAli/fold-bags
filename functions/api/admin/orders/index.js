@@ -1,14 +1,11 @@
 // Fold — admin orders.
 // GET  /api/admin/orders            -> list orders (paged, filterable)
 // PATCH /api/admin/orders/status    -> update status / payment_status on an order
-// All admin routes require a valid bearer session token.
+// Access is guarded by Cloudflare Access (Zero Trust) at the edge.
 
-import { json, requireAuth } from '../../_lib/auth.js';
+import { json } from '../../_lib/auth.js';
 
 export async function onRequest(context) {
-  const authError = await requireAuth(context);
-  if (authError) return authError;
-
   const { request } = context;
   if (request.method === 'GET') return listOrders(request, context);
   if (request.method === 'PATCH') return updateStatus(request, context);

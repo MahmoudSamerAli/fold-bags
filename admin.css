@@ -50,58 +50,9 @@ a {
   text-decoration: none;
 }
 
-/* ---------- Login ---------- */
-.admin-login {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem;
-}
-.login-card {
-  width: 100%;
-  max-width: 380px;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  box-shadow: var(--shadow);
-  padding: 2.2rem;
-}
-.login-card h1 {
-  margin: 0 0 0.3rem;
-  font-size: 1.4rem;
-}
-.login-card p.sub {
-  margin: 0 0 1.6rem;
-  color: var(--text-light);
-  font-size: 0.9rem;
-}
-.login-card label {
-  display: block;
-  margin-bottom: 0.35rem;
-  font-weight: 600;
-  font-size: 0.9rem;
-}
-.login-card input[type='password'] {
-  width: 100%;
-  padding: 0.7rem 0.8rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  font-size: 1rem;
-  margin-bottom: 1.1rem;
-  background: var(--bg);
-  color: var(--text);
-}
-.login-error {
-  color: var(--red);
-  font-size: 0.85rem;
-  min-height: 1.2em;
-  margin-top: -0.4rem;
-}
-
 /* ---------- Layout ---------- */
 .admin-shell {
-  display: none;
+  display: block;
 }
 .admin-topbar {
   display: flex;

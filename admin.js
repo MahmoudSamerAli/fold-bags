@@ -1,22 +1,20 @@
 /* ==========================================
    FOLD — Admin Dashboard client
    Depends on functions/api/admin/* endpoints.
+   Access is enforced by Cloudflare Access (Zero Trust) at the edge — this
+   client does not manage its own login/session.
    ========================================== */
 'use strict';
 
 const API = {
-  login: '/api/admin/login',
-  logout: '/api/admin/logout',
   orders: '/api/admin/orders',
   products: '/api/admin/products'
 };
 
-const TOKEN_KEY = 'fold_admin_token';
 const STATUSES = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'];
 const PAYMENTS = ['unpaid', 'paid', 'refunded'];
 const CATEGORY_LABELS = { crossbody: 'Crossbody', totes: 'Tote Bags', backpacks: 'Backpacks' };
 
-let authToken = localStorage.getItem(TOKEN_KEY) || '';
 let currentOrders = [];
 let currentProducts = [];
 let ordersPage = 1;
@@ -61,70 +59,16 @@ function showToast(msg) {
 
 async function api(url, opts = {}) {
   const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) };
-  if (authToken) headers.Authorization = 'Bearer ' + authToken;
-  const res = await fetch(url, { ...opts, headers });
-  if (res.status === 401) {
-    handleUnauthorized();
-    throw new Error('Unauthorized');
+  let res;
+  try {
+    res = await fetch(url, { ...opts, headers });
+  } catch (ex) {
+    // Access session likely expired — the fetch got redirected to the Access
+    // login (cross-origin, CORS-blocked). Reload /admin to re-authenticate.
+    window.location.href = '/admin';
+    throw ex;
   }
   return res;
-}
-
-function handleUnauthorized() {
-  logout();
-  showToast('Session expired — sign in again');
-}
-
-function logout() {
-  fetch(API.logout, { method: 'POST' }).catch(() => {});
-  authToken = '';
-  localStorage.removeItem(TOKEN_KEY);
-  document.getElementById('login-view').style.display = 'flex';
-  document.getElementById('admin-view').style.display = 'none';
-}
-
-/* ==================== LOGIN ==================== */
-async function doLogin(e) {
-  e.preventDefault();
-  const btn = document.getElementById('login-btn');
-  const err = document.getElementById('login-error');
-  err.textContent = '';
-  btn.disabled = true;
-  btn.textContent = 'Signing in…';
-  try {
-    const res = await fetch(API.login, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password: document.getElementById('password').value })
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Login failed');
-    authToken = data.token;
-    localStorage.setItem(TOKEN_KEY, authToken);
-    enterDashboard();
-  } catch (ex) {
-    err.textContent = ex.message || 'Invalid password';
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Sign In';
-  }
-}
-
-function enterDashboard() {
-  document.getElementById('login-view').style.display = 'none';
-  document.getElementById('admin-view').style.display = 'block';
-  document.getElementById('password').value = '';
-  switchPanel('orders');
-  refreshAll();
-}
-
-function switchPanel(name) {
-  document
-    .querySelectorAll('.admin-nav button')
-    .forEach((b) => b.classList.toggle('active', b.dataset.panel === name));
-  document
-    .querySelectorAll('.panel')
-    .forEach((p) => p.classList.toggle('active', p.id === 'panel-' + name));
 }
 
 /* ==================== ORDERS ==================== */
@@ -453,13 +397,7 @@ function refreshAll() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  if (authToken) enterDashboard();
-
-  document.getElementById('login-form').addEventListener('submit', doLogin);
-  document.getElementById('logout-btn').addEventListener('click', () => {
-    logout();
-    showToast('Logged out');
-  });
+  refreshAll();
 
   document.querySelectorAll('.admin-nav button').forEach((b) =>
     b.addEventListener('click', () => {
@@ -505,3 +443,12 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('product-cat-filter').addEventListener('change', renderProducts);
   document.getElementById('show-inactive').addEventListener('change', renderProducts);
 });
+
+function switchPanel(name) {
+  document
+    .querySelectorAll('.admin-nav button')
+    .forEach((b) => b.classList.toggle('active', b.dataset.panel === name));
+  document
+    .querySelectorAll('.panel')
+    .forEach((p) => p.classList.toggle('active', p.id === 'panel-' + name));
+}
