@@ -17,10 +17,14 @@ export async function onRequest(context) {
 
 async function listProducts(context) {
   try {
-    const { results } = await context.env.DB
-      .prepare(`SELECT * FROM products ORDER BY id ASC`)
-      .all();
-    const rows = (results || []).map((r) => ({ ...r, colors: safeArr(r.colors), sizes: safeArr(r.sizes) }));
+    const { results } = await context.env.DB.prepare(
+      `SELECT * FROM products ORDER BY id ASC`
+    ).all();
+    const rows = (results || []).map((r) => ({
+      ...r,
+      colors: safeArr(r.colors),
+      sizes: safeArr(r.sizes)
+    }));
     return json({ products: rows });
   } catch (e) {
     return json({ error: 'Could not read products' }, 500);
@@ -41,7 +45,10 @@ async function createProduct(request, context) {
   const brand = (body.brand || '').toString().trim();
   const category = (body.category || '').toString().trim() || 'crossbody';
   const price = Math.max(0, Number(body.price) || 0);
-  const oldPrice = body.old_price === null || body.old_price === undefined ? null : Math.max(0, Number(body.old_price) || 0);
+  const oldPrice =
+    body.old_price === null || body.old_price === undefined
+      ? null
+      : Math.max(0, Number(body.old_price) || 0);
   const image = (body.image || '').toString().trim();
   const stock = Math.max(0, Number(body.stock) || 0);
   const description = (body.description || '').toString().trim();
@@ -56,7 +63,20 @@ async function createProduct(request, context) {
     const result = await context.env.DB.prepare(
       `INSERT INTO products (name, brand, category, price, old_price, image, colors, sizes, stock, description, active)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`
-    ).bind(name, brand, category, price, oldPrice, image, JSON.stringify(colors), JSON.stringify(sizes), stock, description).run();
+    )
+      .bind(
+        name,
+        brand,
+        category,
+        price,
+        oldPrice,
+        image,
+        JSON.stringify(colors),
+        JSON.stringify(sizes),
+        stock,
+        description
+      )
+      .run();
 
     const id = result.meta.last_row_id;
     return json({ success: true, id, sold_out: false, active: true }, 201);

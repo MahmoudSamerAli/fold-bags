@@ -30,24 +30,32 @@ export async function onRequest(context) {
     return json({ error: 'Invalid password' }, 401);
   }
 
-  // Maximum login attempts guard to slow brute force (simple, in-memory within a single isolate).
-  // For production hardening consider rate limiting via Cloudflare.
-
   const token = generateToken();
   const expiresAt = new Date(Date.now() + SESSION_HOURS * 60 * 60 * 1000).toISOString();
 
+  if (!env.DB) {
+    console.error('[login] D1 binding (env.DB) is not configured');
+    return json({ error: 'Database binding not configured' }, 500);
+  }
+
   try {
-    if (!env.DB) {
-      console.error('[login] D1 binding (env.DB) is not configured');
-      return json({ error: 'Database binding not configured' }, 500);
-    }
     await env.DB.prepare('INSERT INTO admin_sessions (token, expires_at) VALUES (?, ?)')
       .bind(token, expiresAt)
       .run();
+  } catch (e) {
+    // Session insert failed — fail the login before issuing the token.
+    console.error('[login] Could not create session:', e && e.message ? e.message : String(e));
+    return json({ error: 'Could not create session' }, 500);
+  }
+
+  // Best-effort cleanup of expired sessions; never fail a successful login on it.
+  try {
     await env.DB.prepare("DELETE FROM admin_sessions WHERE expires_at < datetime('now')").run();
   } catch (e) {
-    console.error('[login] Could not store session:', e && e.message ? e.message : String(e));
-    return json({ error: 'Could not create session' }, 500);
+    console.error(
+      '[login] Could not clean up expired sessions:',
+      e && e.message ? e.message : String(e)
+    );
   }
 
   const result = { token, expires_at: expiresAt };

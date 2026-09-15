@@ -11,9 +11,7 @@ const DASHBOARD_PATH = '/admin.html';
 export async function adminGate(context) {
   const { request, env } = context;
 
-  const token =
-    (await getCookie(request, COOKIE)) ||
-    (await getBearer(request));
+  const token = (await getCookie(request, COOKIE)) || (await getBearer(request));
 
   if (token && (await verifySession(env, token))) {
     return serveDashboard(context);

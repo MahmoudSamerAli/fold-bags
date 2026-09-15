@@ -2,8 +2,6 @@
 // Verifies a bearer token stored in the admin_sessions table (D1).
 // Tokens are issued on successful login and short-lived.
 
-const SESSION_HOURS = 24;
-
 export function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
@@ -19,9 +17,15 @@ export async function getBearer(request) {
 // Reads a named cookie value from a request's Cookie header.
 export function getCookie(request, name) {
   const header = request.headers.get('Cookie') || '';
-  const match = header.match(new RegExp('(?:^|;\\s*)' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '=([^;]*)'));
+  const match = header.match(
+    new RegExp('(?:^|;\\s*)' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '=([^;]*)')
+  );
   if (!match) return null;
-  try { return decodeURIComponent(match[1]); } catch (e) { return match[1]; }
+  try {
+    return decodeURIComponent(match[1]);
+  } catch (e) {
+    return match[1];
+  }
 }
 
 // Constant-time string compare — avoids timing oracles on length or content.
@@ -39,9 +43,9 @@ export function safeEqual(a, b) {
 export async function verifySession(env, token) {
   if (!token) return false;
   try {
-    const row = await env.DB.prepare(
-      'SELECT token, expires_at FROM admin_sessions WHERE token = ?'
-    ).bind(token).first();
+    const row = await env.DB.prepare('SELECT token, expires_at FROM admin_sessions WHERE token = ?')
+      .bind(token)
+      .first();
     if (!row) return false;
     if (new Date(row.expires_at) < new Date()) return false;
     return true;

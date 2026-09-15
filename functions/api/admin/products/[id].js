@@ -5,7 +5,19 @@
 
 import { json, requireAuth } from '../../_lib/auth.js';
 
-const EDITABLE = ['name', 'brand', 'category', 'price', 'old_price', 'image', 'colors', 'sizes', 'stock', 'description', 'active'];
+const EDITABLE = [
+  'name',
+  'brand',
+  'category',
+  'price',
+  'old_price',
+  'image',
+  'colors',
+  'sizes',
+  'stock',
+  'description',
+  'active'
+];
 const CATEGORIES = ['crossbody', 'totes', 'backpacks'];
 
 export async function onRequest(context) {
@@ -56,7 +68,9 @@ async function updateProduct(request, env, id) {
   bind.push(id);
 
   try {
-    const result = await env.DB.prepare(`UPDATE products SET ${sets.join(', ')} WHERE id = ?`).bind(...bind).run();
+    const result = await env.DB.prepare(`UPDATE products SET ${sets.join(', ')} WHERE id = ?`)
+      .bind(...bind)
+      .run();
     if (result.meta.changes === 0) return json({ error: 'Product not found' }, 404);
     return json({ success: true });
   } catch (e) {
@@ -66,7 +80,9 @@ async function updateProduct(request, env, id) {
 
 async function softDelete(env, id) {
   try {
-    const result = await env.DB.prepare('UPDATE products SET active = 0 WHERE id = ?').bind(id).run();
+    const result = await env.DB.prepare('UPDATE products SET active = 0 WHERE id = ?')
+      .bind(id)
+      .run();
     if (result.meta.changes === 0) return json({ error: 'Product not found' }, 404);
     return json({ success: true });
   } catch (e) {

@@ -22,16 +22,23 @@ let currentProducts = [];
 let ordersPage = 1;
 const PER = 30;
 const prices = (n) => Number(n || 0).toLocaleString('en-EG') + ' EGP';
-const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const esc = (s) =>
+  String(s ?? '').replace(
+    /[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]
+  );
 
 let editingColors = [];
 
 function renderColorTags() {
   const container = document.getElementById('color-tags');
   if (!container) return;
-  container.innerHTML = editingColors.map((c, i) =>
-    `<span class="color-tag"><span class="swatch" style="background:${esc(c.hex)}"></span>${esc(c.name)}<button type="button" class="remove-color" data-index="${i}">&times;</button></span>`
-  ).join('');
+  container.innerHTML = editingColors
+    .map(
+      (c, i) =>
+        `<span class="color-tag"><span class="swatch" style="background:${esc(c.hex)}"></span>${esc(c.name)}<button type="button" class="remove-color" data-index="${i}">&times;</button></span>`
+    )
+    .join('');
 }
 
 function addEditingColor(name, hex) {
@@ -56,7 +63,10 @@ async function api(url, opts = {}) {
   const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) };
   if (authToken) headers.Authorization = 'Bearer ' + authToken;
   const res = await fetch(url, { ...opts, headers });
-  if (res.status === 401) { handleUnauthorized(); throw new Error('Unauthorized'); }
+  if (res.status === 401) {
+    handleUnauthorized();
+    throw new Error('Unauthorized');
+  }
   return res;
 }
 
@@ -79,7 +89,8 @@ async function doLogin(e) {
   const btn = document.getElementById('login-btn');
   const err = document.getElementById('login-error');
   err.textContent = '';
-  btn.disabled = true; btn.textContent = 'Signing in…';
+  btn.disabled = true;
+  btn.textContent = 'Signing in…';
   try {
     const res = await fetch(API.login, {
       method: 'POST',
@@ -94,7 +105,8 @@ async function doLogin(e) {
   } catch (ex) {
     err.textContent = ex.message || 'Invalid password';
   } finally {
-    btn.disabled = false; btn.textContent = 'Sign In';
+    btn.disabled = false;
+    btn.textContent = 'Sign In';
   }
 }
 
@@ -107,8 +119,12 @@ function enterDashboard() {
 }
 
 function switchPanel(name) {
-  document.querySelectorAll('.admin-nav button').forEach((b) => b.classList.toggle('active', b.dataset.panel === name));
-  document.querySelectorAll('.panel').forEach((p) => p.classList.toggle('active', p.id === 'panel-' + name));
+  document
+    .querySelectorAll('.admin-nav button')
+    .forEach((b) => b.classList.toggle('active', b.dataset.panel === name));
+  document
+    .querySelectorAll('.panel')
+    .forEach((p) => p.classList.toggle('active', p.id === 'panel-' + name));
 }
 
 /* ==================== ORDERS ==================== */
@@ -129,19 +145,28 @@ async function loadOrders() {
   renderPager(Math.ceil((data.total || 0) / PER));
 }
 
-const orderBadge = (s) => `<span class="badge b-${s || 'pending'}">${(s || 'pending').toUpperCase()}</span>`;
-const payBadge = (s) => `<span class="badge b-${s || 'unpaid'}">${(s || 'unpaid').toUpperCase()}</span>`;
+const payBadge = (s) =>
+  `<span class="badge b-${s || 'unpaid'}">${(s || 'unpaid').toUpperCase()}</span>`;
 
 function renderOrders(orders) {
   const tbody = document.getElementById('orders-tbody');
-  if (!orders.length) { tbody.innerHTML = '<tr><td colspan="8" class="muted">No orders yet.</td></tr>'; return; }
-  tbody.innerHTML = orders.map((o) => {
-    const itemsText = Array.isArray(o.items) && o.items.length
-      ? o.items.map((it) => `${esc(it.name)} x${it.qty}`).join(', ')
-      : '—';
-    const opts = STATUSES.map((s) => `<option value="${s}" ${o.status === s ? 'selected' : ''}>${s}</option>`).join('');
-    const payOpts = PAYMENTS.map((s) => `<option value="${s}" ${o.payment_status === s ? 'selected' : ''}>${s}</option>`).join('');
-    return `
+  if (!orders.length) {
+    tbody.innerHTML = '<tr><td colspan="8" class="muted">No orders yet.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = orders
+    .map((o) => {
+      const itemsText =
+        Array.isArray(o.items) && o.items.length
+          ? o.items.map((it) => `${esc(it.name)} x${it.qty}`).join(', ')
+          : '—';
+      const opts = STATUSES.map(
+        (s) => `<option value="${s}" ${o.status === s ? 'selected' : ''}>${s}</option>`
+      ).join('');
+      const payOpts = PAYMENTS.map(
+        (s) => `<option value="${s}" ${o.payment_status === s ? 'selected' : ''}>${s}</option>`
+      ).join('');
+      return `
       <tr data-order="${esc(o.order_id)}">
         <td><strong>#${esc(o.order_id)}</strong></td>
         <td>
@@ -160,11 +185,14 @@ function renderOrders(orders) {
         <td class="muted">${esc((o.created_at || '').slice(0, 16)).replace('T', ' ')}</td>
         <td>${payBadge(o.payment_status)}</td>
       </tr>`;
-  }).join('');
+    })
+    .join('');
 }
 
 function renderOrderStats(total, stats) {
-  const paid = stats.paid || 0, unpaid = stats.unpaid || 0, refunded = stats.refunded || 0;
+  const paid = stats.paid || 0,
+    unpaid = stats.unpaid || 0,
+    refunded = stats.refunded || 0;
   const outstanding = Number(stats.outstanding) || 0;
   document.getElementById('order-stats').innerHTML = `
     <div class="stat-card"><div class="num">${total}</div><div class="lbl">Total orders</div></div>
@@ -180,8 +208,18 @@ function renderPager(pages) {
     <button class="btn btn-outline" id="prev-page" ${ordersPage <= 1 ? 'disabled' : ''}>← Prev</button>
     <span class="muted" style="margin:0 .6rem">Page ${ordersPage} of ${pages || 1}</span>
     <button class="btn btn-outline" id="next-page" ${ordersPage >= pages ? 'disabled' : ''}>Next →</button>`;
-  const prev = document.getElementById('prev-page'); if (prev) prev.onclick = () => { ordersPage--; loadOrders(); };
-  const next = document.getElementById('next-page'); if (next) next.onclick = () => { ordersPage++; loadOrders(); };
+  const prev = document.getElementById('prev-page');
+  if (prev)
+    prev.onclick = () => {
+      ordersPage--;
+      loadOrders();
+    };
+  const next = document.getElementById('next-page');
+  if (next)
+    next.onclick = () => {
+      ordersPage++;
+      loadOrders();
+    };
 }
 
 async function updateOrderField(orderId, field, value) {
@@ -222,18 +260,34 @@ function renderProducts() {
   let list = currentProducts.filter((p) => {
     if (!showInactive && !p.active) return false;
     if (cat && p.category !== cat) return false;
-    if (search && !(String(p.name).toLowerCase().includes(search) || String(p.brand).toLowerCase().includes(search))) return false;
+    if (
+      search &&
+      !(
+        String(p.name).toLowerCase().includes(search) ||
+        String(p.brand).toLowerCase().includes(search)
+      )
+    )
+      return false;
     return true;
   });
 
   const tbody = document.getElementById('products-tbody');
-  if (!list.length) { tbody.innerHTML = '<tr><td colspan="7" class="muted">No products.</td></tr>'; return; }
-  tbody.innerHTML = list.map((p) => {
-    const s = Number(p.stock);
-    const stockClass = s <= 0 ? 'qty-badge' : (s <= 3 ? 'qty-badge-low' : '');
-    const stockColor = s <= 0 ? 'var(--red)' : (s <= 3 ? '#c98a2d' : '');
-    const stockTag = s <= 0 ? ' <span class="badge b-cancelled">OUT</span>' : (s <= 3 ? ' <span class="badge b-pending">LOW</span>' : '');
-    return `
+  if (!list.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="muted">No products.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = list
+    .map((p) => {
+      const s = Number(p.stock);
+      const stockClass = s <= 0 ? 'qty-badge' : s <= 3 ? 'qty-badge-low' : '';
+      const stockColor = s <= 0 ? 'var(--red)' : s <= 3 ? '#c98a2d' : '';
+      const stockTag =
+        s <= 0
+          ? ' <span class="badge b-cancelled">OUT</span>'
+          : s <= 3
+            ? ' <span class="badge b-pending">LOW</span>'
+            : '';
+      return `
     <tr data-pid="${p.id}">
       <td>${p.image ? `<img class="thumb" src="${esc(p.image)}" alt="" onerror="this.style.visibility='hidden'">` : ''}</td>
       <td>
@@ -249,26 +303,41 @@ function renderProducts() {
         <button class="btn btn-outline" data-act="${p.active ? 'hide' : 'show'}" data-id="${p.id}">${p.active ? 'Hide' : 'Show'}</button>
       </td>
     </tr>`;
-  }).join('');
+    })
+    .join('');
 }
 
 document.addEventListener('click', async (e) => {
   const btn = e.target.closest('button[data-act]');
   if (!btn) return;
   const id = Number(btn.dataset.id);
-  if (btn.dataset.act === 'edit') { openProductModal(currentProducts.find((p) => p.id === id)); return; }
-  if (btn.dataset.act === 'hide') { await toggleProduct(id, false); return; }
-  if (btn.dataset.act === 'show') { await toggleProduct(id, true); return; }
+  if (btn.dataset.act === 'edit') {
+    openProductModal(currentProducts.find((p) => p.id === id));
+    return;
+  }
+  if (btn.dataset.act === 'hide') {
+    await toggleProduct(id, false);
+    return;
+  }
+  if (btn.dataset.act === 'show') {
+    await toggleProduct(id, true);
+    return;
+  }
 });
 
 async function toggleProduct(id, active) {
   try {
-    const res = await api(`${API.products}/${id}`, { method: 'PATCH', body: JSON.stringify({ active }) });
+    const res = await api(`${API.products}/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ active })
+    });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Update failed');
     showToast(active ? 'Product shown on store' : 'Product hidden from store');
     loadProducts();
-  } catch (ex) { showToast(ex.message || 'Update failed'); }
+  } catch (ex) {
+    showToast(ex.message || 'Update failed');
+  }
 }
 
 /* ---------- Product modal ---------- */
@@ -283,13 +352,16 @@ function openProductModal(p) {
   document.getElementById('p-stock').value = p ? p.stock : 0;
   document.getElementById('p-image').value = p ? p.image : '';
   document.getElementById('p-description').value = p ? p.description : '';
-  editingColors = p && Array.isArray(p.colors) ? p.colors.map(c => ({ ...c })) : [];
-  document.getElementById('p-sizes').value = p && Array.isArray(p.sizes) ? p.sizes.join(', ') : 'OS';
+  editingColors = p && Array.isArray(p.colors) ? p.colors.map((c) => ({ ...c })) : [];
+  document.getElementById('p-sizes').value =
+    p && Array.isArray(p.sizes) ? p.sizes.join(', ') : 'OS';
   renderColorTags();
   document.getElementById('product-modal').classList.add('open');
 }
 
-function closeProductModal() { document.getElementById('product-modal').classList.remove('open'); }
+function closeProductModal() {
+  document.getElementById('product-modal').classList.remove('open');
+}
 
 async function saveProduct(e) {
   e.preventDefault();
@@ -299,12 +371,19 @@ async function saveProduct(e) {
     brand: document.getElementById('p-brand').value.trim(),
     category: document.getElementById('p-category').value,
     price: Number(document.getElementById('p-price').value),
-    old_price: document.getElementById('p-old-price').value === '' ? null : Number(document.getElementById('p-old-price').value),
+    old_price:
+      document.getElementById('p-old-price').value === ''
+        ? null
+        : Number(document.getElementById('p-old-price').value),
     stock: Number(document.getElementById('p-stock').value || 0),
     image: document.getElementById('p-image').value.trim(),
     description: document.getElementById('p-description').value.trim(),
     colors: editingColors.length ? editingColors : [{ name: 'Default', hex: '#111111' }],
-    sizes: document.getElementById('p-sizes').value.split(',').map(s => s.trim()).filter(Boolean)
+    sizes: document
+      .getElementById('p-sizes')
+      .value.split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)
   };
   try {
     const url = id ? `${API.products}/${id}` : API.products;
@@ -317,7 +396,9 @@ async function saveProduct(e) {
     showToast(id ? 'Product updated' : 'Product added');
     closeProductModal();
     loadProducts();
-  } catch (ex) { showToast(ex.message || 'Save failed'); }
+  } catch (ex) {
+    showToast(ex.message || 'Save failed');
+  }
 }
 
 /* ==================== PAYMENTS ==================== */
@@ -327,8 +408,12 @@ async function loadPayments() {
   currentOrders = data.orders || [];
   renderPayments(currentOrders);
   const total = currentOrders.reduce((a, o) => a + (Number(o.total) || 0), 0);
-  const paid = currentOrders.filter((o) => o.payment_status === 'paid').reduce((a, o) => a + (Number(o.total) || 0), 0);
-  const outstanding = currentOrders.filter((o) => o.payment_status !== 'paid' && o.payment_status !== 'refunded').length;
+  const paid = currentOrders
+    .filter((o) => o.payment_status === 'paid')
+    .reduce((a, o) => a + (Number(o.total) || 0), 0);
+  const outstanding = currentOrders.filter(
+    (o) => o.payment_status !== 'paid' && o.payment_status !== 'refunded'
+  ).length;
   document.getElementById('payment-stats').innerHTML = `
     <div class="stat-card"><div class="num">${prices(total)}</div><div class="lbl">COD expected</div></div>
     <div class="stat-card"><div class="num">${prices(paid)}</div><div class="lbl">Collected</div></div>
@@ -337,8 +422,13 @@ async function loadPayments() {
 
 function renderPayments(orders) {
   const tbody = document.getElementById('payments-tbody');
-  if (!orders.length) { tbody.innerHTML = '<tr><td colspan="6" class="muted">No orders yet.</td></tr>'; return; }
-  tbody.innerHTML = orders.map((o) => `
+  if (!orders.length) {
+    tbody.innerHTML = '<tr><td colspan="6" class="muted">No orders yet.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = orders
+    .map(
+      (o) => `
     <tr data-order="${esc(o.order_id)}">
       <td><strong>#${esc(o.order_id)}</strong></td>
       <td>${esc(o.customer_name)}</td>
@@ -350,28 +440,46 @@ function renderPayments(orders) {
         </select>
       </td>
       <td class="muted">${esc((o.created_at || '').slice(0, 16)).replace('T', ' ')}</td>
-    </tr>`).join('');
+    </tr>`
+    )
+    .join('');
 }
 
 /* ==================== INIT ==================== */
-function refreshAll() { loadOrders(); loadProducts(); loadPayments(); }
+function refreshAll() {
+  loadOrders();
+  loadProducts();
+  loadPayments();
+}
 
 document.addEventListener('DOMContentLoaded', () => {
   if (authToken) enterDashboard();
 
   document.getElementById('login-form').addEventListener('submit', doLogin);
-  document.getElementById('logout-btn').addEventListener('click', () => { logout(); showToast('Logged out'); });
+  document.getElementById('logout-btn').addEventListener('click', () => {
+    logout();
+    showToast('Logged out');
+  });
 
-  document.querySelectorAll('.admin-nav button').forEach((b) => b.addEventListener('click', () => {
-    switchPanel(b.dataset.panel);
-    if (b.dataset.panel === 'orders') { ordersPage = 1; loadOrders(); }
-    if (b.dataset.panel === 'products') loadProducts();
-    if (b.dataset.panel === 'payments') loadPayments();
-  }));
+  document.querySelectorAll('.admin-nav button').forEach((b) =>
+    b.addEventListener('click', () => {
+      switchPanel(b.dataset.panel);
+      if (b.dataset.panel === 'orders') {
+        ordersPage = 1;
+        loadOrders();
+      }
+      if (b.dataset.panel === 'products') loadProducts();
+      if (b.dataset.panel === 'payments') loadPayments();
+    })
+  );
 
-  document.getElementById('add-product-btn').addEventListener('click', () => openProductModal(null));
+  document
+    .getElementById('add-product-btn')
+    .addEventListener('click', () => openProductModal(null));
   document.getElementById('product-cancel').addEventListener('click', closeProductModal);
-  document.getElementById('product-modal').addEventListener('click', (e) => { if (e.target.id === 'product-modal') closeProductModal(); });
+  document.getElementById('product-modal').addEventListener('click', (e) => {
+    if (e.target.id === 'product-modal') closeProductModal();
+  });
   document.getElementById('product-form').addEventListener('submit', saveProduct);
 
   document.getElementById('add-color-btn').addEventListener('click', () => {
@@ -386,7 +494,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btn) removeEditingColor(Number(btn.dataset.index));
   });
 
-  const bounce = () => { ordersPage = 1; loadOrders(); };
+  const bounce = () => {
+    ordersPage = 1;
+    loadOrders();
+  };
   document.getElementById('order-search').addEventListener('input', bounce);
   document.getElementById('order-status-filter').addEventListener('change', bounce);
   document.getElementById('order-payment-filter').addEventListener('change', bounce);

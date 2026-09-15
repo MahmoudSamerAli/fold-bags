@@ -1,0 +1,27 @@
+{
+  "name": "fold-bags",
+  "version": "1.0.0",
+  "description": "Fold — minimal bags e-commerce storefront (Cash on Delivery) for the Egyptian market. Static HTML/CSS/JS storefront + Cloudflare Pages Functions + D1.",
+  "private": true,
+  "license": "SEE LICENSE IN LICENSE",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "seed": "node scripts/seed-products-generate.js",
+    "test": "node --test",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "npm run lint && npm run format:check && npm test"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.10.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.12.0",
+    "prettier": "^3.9.6"
+  }
+}

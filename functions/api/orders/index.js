@@ -6,8 +6,11 @@ import { json } from '../_lib/auth.js';
 
 const FREE_SHIPPING_MIN = 1000;
 const SHIPPING_FEE = 50;
-// D3: minimum seconds between orders placed from the same phone number.
+// Minimum seconds between orders placed from the same phone number.
 const ORDER_COOLDOWN_SECONDS = 60;
+
+const logError = (prefix, e) =>
+  console.error(`[orders] ${prefix}:`, e && e.message ? e.message : String(e));
 
 export async function onRequest(context) {
   const { request, env } = context;
@@ -19,6 +22,11 @@ export async function onRequest(context) {
 }
 
 async function createOrder(request, env) {
+  if (!env.DB) {
+    console.error('[orders] D1 binding (env.DB) is not configured');
+    return json({ error: 'Database binding not configured' }, 500);
+  }
+
   let body;
   try {
     body = await request.json();
@@ -45,41 +53,50 @@ async function createOrder(request, env) {
   }
 
   try {
-    // D3: per-phone cooldown guard against rapid-fire submissions.
+    // Per-phone cooldown guard against rapid-fire submissions.
     const { results: recent } = await env.DB.prepare(
       `SELECT created_at FROM orders
        WHERE replace(customer_phone, '+', '') = ?
        ORDER BY created_at DESC LIMIT 1`
-    ).bind(phoneKey).all();
+    )
+      .bind(phoneKey)
+      .all();
 
     if (recent && recent.length) {
       const last = new Date(recent[0].created_at + 'Z').getTime();
       const elapsed = (Date.now() - last) / 1000;
       if (!Number.isNaN(last) && elapsed < ORDER_COOLDOWN_SECONDS) {
-        return json(
-          { error: 'Too many orders from this number. Please try again shortly.' },
-          429
-        );
+        return json({ error: 'Too many orders from this number. Please try again shortly.' }, 429);
       }
     }
+  } catch (e) {
+    logError('cooldown lookup failed', e);
+    return json({ error: 'Could not save order' }, 500);
+  }
 
-    // D4: validate items against the live catalog and recompute prices server-side.
-    const ids = items.map((it) => it.id).filter((id) => id != null);
-    const placeholders = ids.map(() => '?').join(',');
+  // Validate items against the live catalog and recompute prices server-side.
+  const ids = items.map((it) => it.id).filter((id) => id != null);
+  const placeholders = ids.map(() => '?').join(',');
+  const resolved = [];
+  let subtotal = 0;
+
+  try {
     const { results: products } = await env.DB.prepare(
       `SELECT id, price, stock, active FROM products WHERE id IN (${placeholders}) AND active = 1`
-    ).bind(...ids).all();
+    )
+      .bind(...ids)
+      .all();
 
     const byId = Object.create(null);
     for (const p of products) byId[p.id] = p;
 
-    const resolved = [];
-    let subtotal = 0;
-
     for (const item of items) {
       const product = byId[item.id];
       if (!product) {
-        return json({ error: `One of the selected products is unavailable`, order_id: orderId }, 400);
+        return json(
+          { error: `One of the selected products is unavailable`, order_id: orderId },
+          400
+        );
       }
       const qty = Number(item.qty);
       if (!Number.isInteger(qty) || qty <= 0) {
@@ -98,39 +115,60 @@ async function createOrder(request, env) {
       });
       subtotal += product.price * qty;
     }
+  } catch (e) {
+    logError('product lookup failed', e);
+    return json({ error: 'Could not save order' }, 500);
+  }
 
-    const shipping = subtotal >= FREE_SHIPPING_MIN ? 0 : SHIPPING_FEE;
-    const total = subtotal + shipping;
+  const shipping = subtotal >= FREE_SHIPPING_MIN ? 0 : SHIPPING_FEE;
+  const total = subtotal + shipping;
 
+  try {
     await env.DB.prepare(
       `INSERT INTO orders (order_id, customer_name, customer_phone, city, address, payment_method, items, subtotal, shipping, total, status)
        VALUES (?, ?, ?, ?, ?, 'cod', ?, ?, ?, ?, 'pending')`
     )
-      .bind(orderId, name, phone, city, address, JSON.stringify(resolved), subtotal, shipping, total)
+      .bind(
+        orderId,
+        name,
+        phone,
+        city,
+        address,
+        JSON.stringify(resolved),
+        subtotal,
+        shipping,
+        total
+      )
       .run();
 
     const stmts = resolved.map((item) =>
-      env.DB.prepare('UPDATE products SET stock = MAX(0, stock - ?) WHERE id = ?')
-        .bind(item.qty, item.id)
+      env.DB.prepare('UPDATE products SET stock = MAX(0, stock - ?) WHERE id = ?').bind(
+        item.qty,
+        item.id
+      )
     );
     await env.DB.batch(stmts);
-
-    return json(
-      { success: true, order_id: orderId, subtotal, shipping, total },
-      201
-    );
-  } catch (err) {
+  } catch (e) {
+    logError('insert or stock decrement failed', e);
     return json({ error: 'Could not save order' }, 500);
   }
+
+  return json({ success: true, order_id: orderId, subtotal, shipping, total }, 201);
 }
 
 async function getOrders(env) {
+  if (!env.DB) {
+    console.error('[orders] D1 binding (env.DB) is not configured');
+    return json({ error: 'Database binding not configured' }, 500);
+  }
+
   try {
-    const { results } = await env.DB
-      .prepare(`SELECT order_id, customer_name, customer_phone, city, address, payment_method, items, subtotal, shipping, total, status, created_at, updated_at FROM orders ORDER BY created_at DESC LIMIT 100`)
-      .all();
+    const { results } = await env.DB.prepare(
+      `SELECT order_id, customer_name, customer_phone, city, address, payment_method, items, subtotal, shipping, total, status, created_at, updated_at FROM orders ORDER BY created_at DESC LIMIT 100`
+    ).all();
     return json(results || []);
   } catch (err) {
+    logError('could not read orders', err);
     return json({ error: 'Could not read orders' }, 500);
   }
 }

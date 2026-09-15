@@ -26,8 +26,14 @@ async function listOrders(request, context) {
 
   const where = [];
   const bind = [];
-  if (status) { where.push('status = ?'); bind.push(status); }
-  if (payment) { where.push('payment_status = ?'); bind.push(payment); }
+  if (status) {
+    where.push('status = ?');
+    bind.push(status);
+  }
+  if (payment) {
+    where.push('payment_status = ?');
+    bind.push(payment);
+  }
   if (q) {
     where.push('(customer_name LIKE ? OR customer_phone LIKE ? OR order_id LIKE ?)');
     const like = `%${q}%`;
@@ -38,21 +44,30 @@ async function listOrders(request, context) {
   try {
     const countRow = await context.env.DB.prepare(
       `SELECT COUNT(*) AS total FROM orders ${whereSql}`
-    ).bind(...bind).first();
+    )
+      .bind(...bind)
+      .first();
     const results = await context.env.DB.prepare(
       `SELECT * FROM orders ${whereSql} ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?`
-    ).bind(...bind, per, offset).all();
+    )
+      .bind(...bind, per, offset)
+      .all();
 
     let stats = { paid: 0, unpaid: 0, refunded: 0, outstanding: 0 };
     try {
       const statsRow = await context.env.DB.prepare(
         `SELECT payment_status, COUNT(*) AS cnt, SUM(total) AS sum_total FROM orders ${whereSql} GROUP BY payment_status`
-      ).bind(...bind).all();
-      for (const row of (statsRow.results || [])) {
+      )
+        .bind(...bind)
+        .all();
+      for (const row of statsRow.results || []) {
         if (row.payment_status in stats) stats[row.payment_status] = row.cnt;
-        if (row.payment_status !== 'paid' && row.payment_status !== 'refunded') stats.outstanding += (Number(row.sum_total) || 0);
+        if (row.payment_status !== 'paid' && row.payment_status !== 'refunded')
+          stats.outstanding += Number(row.sum_total) || 0;
       }
-    } catch (e) { /* stats query failed — fall back to zeros */ }
+    } catch (e) {
+      /* stats query failed — fall back to zeros */
+    }
 
     const rows = (results.results || []).map((r) => ({
       ...r,
@@ -85,11 +100,14 @@ async function updateStatus(request, context) {
   const bind = [];
   if (body.status !== undefined) {
     if (!STATUSES.includes(body.status)) return json({ error: 'Invalid status' }, 400);
-    sets.push('status = ?'); bind.push(body.status);
+    sets.push('status = ?');
+    bind.push(body.status);
   }
   if (body.payment_status !== undefined) {
-    if (!PAYMENTS.includes(body.payment_status)) return json({ error: 'Invalid payment_status' }, 400);
-    sets.push('payment_status = ?'); bind.push(body.payment_status);
+    if (!PAYMENTS.includes(body.payment_status))
+      return json({ error: 'Invalid payment_status' }, 400);
+    sets.push('payment_status = ?');
+    bind.push(body.payment_status);
   }
   if (!sets.length) return json({ error: 'Nothing to update' }, 400);
 
@@ -97,7 +115,9 @@ async function updateStatus(request, context) {
   try {
     const result = await context.env.DB.prepare(
       `UPDATE orders SET ${sets.join(', ')} WHERE order_id = ?`
-    ).bind(...bind).run();
+    )
+      .bind(...bind)
+      .run();
 
     if (result.meta.changes === 0) return json({ error: 'Order not found' }, 404);
 
@@ -113,14 +133,18 @@ async function updateStatus(request, context) {
 
 async function restoreStock(env, orderId) {
   try {
-    const order = await env.DB.prepare('SELECT items FROM orders WHERE order_id = ?').bind(orderId).first();
+    const order = await env.DB.prepare('SELECT items FROM orders WHERE order_id = ?')
+      .bind(orderId)
+      .first();
     const items = safeJson(order ? order.items : '[]');
     if (!Array.isArray(items) || !items.length) return;
     const stmts = items
       .filter((item) => item && item.id != null)
       .map((item) =>
-        env.DB.prepare('UPDATE products SET stock = stock + ? WHERE id = ?')
-          .bind(Number(item.qty) || 0, item.id)
+        env.DB.prepare('UPDATE products SET stock = stock + ? WHERE id = ?').bind(
+          Number(item.qty) || 0,
+          item.id
+        )
       );
     if (stmts.length) await env.DB.batch(stmts);
   } catch (e) {

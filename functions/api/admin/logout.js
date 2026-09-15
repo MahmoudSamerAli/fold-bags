@@ -11,9 +11,7 @@ export async function onRequest(context) {
     return json({ error: 'Method not allowed' }, 405);
   }
 
-  const token =
-    (await getCookie(request, COOKIE)) ||
-    (await getBearer(request));
+  const token = (await getCookie(request, COOKIE)) || (await getBearer(request));
 
   if (token) {
     try {

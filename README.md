@@ -4,13 +4,13 @@ Minimal bags for the modern journey. A static storefront built with **HTML, CSS,
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Frontend | HTML + CSS + vanilla JS (no framework, no build step) |
-| Product data | Cloudflare D1 (served via `/api/products`), seeded from `data/products.js` |
-| Order storage | Cloudflare Pages Function + Cloudflare D1 (SQLite) |
-| Admin dashboard | Static `admin.html` + protected `/api/admin/*` Functions |
-| Deployment | Cloudflare Pages (static) + GitHub |
+| Layer           | Technology                                                                 |
+| --------------- | -------------------------------------------------------------------------- |
+| Frontend        | HTML + CSS + vanilla JS (no framework, no build step)                      |
+| Product data    | Cloudflare D1 (served via `/api/products`), seeded from `data/products.js` |
+| Order storage   | Cloudflare Pages Function + Cloudflare D1 (SQLite)                         |
+| Admin dashboard | Static `admin.html` + protected `/api/admin/*` Functions                   |
+| Deployment      | Cloudflare Pages (static) + GitHub                                         |
 
 ## Project Structure
 
@@ -40,7 +40,13 @@ fold-bags/
 │   │   └── _lib/          # Shared auth + admin gate helpers
 │   └── ...
 ├── migrations/           # D1 schema + seed
-├── scripts/              # Tooling (product seed generator)
+├── scripts/
+│   └── seed-products-generate.js  # Catalog → seed SQL generator
+├── test/                 # node:test suite (no test dependencies)
+├── package.json          # npm scripts (test/lint/format/seed), dev deps
+├── eslint.config.js      # ESLint flat config (JS linting)
+├── .prettierrc.json      # Prettier config (JS/CSS/HTML/MD/JSON)
+├── .prettierignore
 ├── style.css             # Storefront styles (light/dark themes)
 ├── script.js             # Storefront behavior (cart, wishlist, COD, renderers)
 ├── admin.css             # Admin dashboard styles
@@ -60,7 +66,7 @@ python -m http.server 8080
 
 Then visit `http://localhost:8080`.
 
-> **Note:** The storefront now loads products from `/api/products` (D1-backed) and orders need the Pages Function + D1. The project ships **without a `wrangler.toml`** — the D1 binding (`DB` → `fold`) and the `ADMIN_PASSWORD` secret are configured in the Cloudflare dashboard (see *Deployment*). To test Functions and D1 locally, create a local (git-ignored) `wrangler.toml` with the D1 binding, then run with Wrangler:
+> **Note:** The storefront now loads products from `/api/products` (D1-backed) and orders need the Pages Function + D1. The project ships **without a `wrangler.toml`** — the D1 binding (`DB` → `fold`) and the `ADMIN_PASSWORD` secret are configured in the Cloudflare dashboard (see _Deployment_). To test Functions and D1 locally, create a local (git-ignored) `wrangler.toml` with the D1 binding, then run with Wrangler:
 >
 > ```bash
 > # local wrangler.toml (DO NOT commit):
@@ -75,6 +81,27 @@ Then visit `http://localhost:8080`.
 > ```
 >
 > Running with a plain `python -m http.server` will fall back to the bundled `data/products.js` catalog, and `POST /api/orders` will fail (expected — no Function runtime).
+
+## Development Tooling
+
+The repo ships with npm tooling for linting, formatting, and testing. These are **developer-only** dependencies — the deployed site is still static HTML/CSS/JS with zero runtime dependencies and no build step. Requires Node 20+:
+
+```bash
+npm install          # install ESLint + Prettier (dev-only)
+npm run check        # lint + format check + tests (all of the below)
+npm run lint         # ESLint: catch unused vars, undef, etc.
+npm run lint:fix     # ESLint with --fix
+npm run format       # Prettier --write (formats JS/CSS/HTML/MD/JSON)
+npm run format:check # Prettier --check (CI-friendly)
+npm test             # node:test suite — product catalog integrity, seed SQL, auth helpers
+npm run seed         # regenerate migrations/0003_seed_products.sql from data/products.js
+```
+
+Notes:
+
+- The product catalog tests verify ids are unique, categories/prices/stock/colors/sizes are valid, **and that every product's image file exists on disk** — helpful when adding products.
+- The seed generator now accepts an optional output path (`node scripts/seed-products-generate.js <output.sql>`); tests use a temp path so the committed migration is never rewritten by the test run.
+- The `functions/` backend uses ES modules, so `package.json` sets `"type": "module"`.
 
 ## Payments — Cash on Delivery only
 
@@ -117,19 +144,19 @@ node scripts/seed-products-generate.js
 
 ## API
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `GET` | `/api/products` | Public | List active products (storefront) |
-| `POST` | `/api/orders` | Public | Store a COD order |
-| `GET` | `/api/orders` | Public | List recent orders (latest 100) |
-| `POST` | `/api/admin/login` | — | Verify password, issue session token + cookie |
-| `POST` | `/api/admin/logout` | Bearer/cookie | Invalidate session, clear cookie |
-| `GET` | `/api/admin/orders` | Bearer | List orders (paged, filterable) |
-| `PATCH` | `/api/admin/orders` | Bearer | Update order `status` / `payment_status` |
-| `GET` | `/api/admin/products` | Bearer | List all products |
-| `POST` | `/api/admin/products` | Bearer | Create a product |
-| `PATCH` | `/api/admin/products/:id` | Bearer | Update a product |
-| `DELETE` | `/api/admin/products/:id` | Bearer | Soft-delete a product (hide) |
+| Method   | Endpoint                  | Auth          | Description                                   |
+| -------- | ------------------------- | ------------- | --------------------------------------------- |
+| `GET`    | `/api/products`           | Public        | List active products (storefront)             |
+| `POST`   | `/api/orders`             | Public        | Store a COD order                             |
+| `GET`    | `/api/orders`             | Public        | List recent orders (latest 100)               |
+| `POST`   | `/api/admin/login`        | —             | Verify password, issue session token + cookie |
+| `POST`   | `/api/admin/logout`       | Bearer/cookie | Invalidate session, clear cookie              |
+| `GET`    | `/api/admin/orders`       | Bearer        | List orders (paged, filterable)               |
+| `PATCH`  | `/api/admin/orders`       | Bearer        | Update order `status` / `payment_status`      |
+| `GET`    | `/api/admin/products`     | Bearer        | List all products                             |
+| `POST`   | `/api/admin/products`     | Bearer        | Create a product                              |
+| `PATCH`  | `/api/admin/products/:id` | Bearer        | Update a product                              |
+| `DELETE` | `/api/admin/products/:id` | Bearer        | Soft-delete a product (hide)                  |
 
 ## Admin Dashboard
 

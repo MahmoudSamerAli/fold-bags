@@ -9,9 +9,9 @@ export async function onRequest(context) {
   if (request.method !== 'GET') return json({ error: 'Method not allowed' }, 405);
 
   try {
-    const { results } = await context.env.DB
-      .prepare(`SELECT id, name, brand, category, price, old_price, image, colors, sizes, stock, description FROM products WHERE active = 1 ORDER BY id ASC`)
-      .all();
+    const { results } = await context.env.DB.prepare(
+      `SELECT id, name, brand, category, price, old_price, image, colors, sizes, stock, description FROM products WHERE active = 1 ORDER BY id ASC`
+    ).all();
 
     const products = (results || []).map((r) => ({
       id: r.id,
