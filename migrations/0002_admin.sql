@@ -1,9 +1,7 @@
 -- Fold — Admin: products table + COD payment status on orders
 -- Products move from static data/products.js into D1 so the dashboard can manage them.
 -- Payment: Cash on Delivery only; payment_status tracks collection, structured for future expansion.
-
--- Add payment_status to orders (idempotent-friendly; D1 supports ALTER TABLE ADD COLUMN)
-ALTER TABLE orders ADD COLUMN payment_status TEXT NOT NULL DEFAULT 'unpaid';
+-- payment_status is defined in the CREATE TABLE in 0001_orders.sql, so no ALTER here.
 
 CREATE INDEX IF NOT EXISTS idx_orders_payment ON orders(payment_status);
 

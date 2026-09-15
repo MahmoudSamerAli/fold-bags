@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS orders (
   shipping INTEGER NOT NULL DEFAULT 0,
   total INTEGER NOT NULL DEFAULT 0,
   status TEXT NOT NULL DEFAULT 'pending',
+  payment_status TEXT NOT NULL DEFAULT 'unpaid',
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
