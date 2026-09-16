@@ -10,6 +10,7 @@
   },
   "scripts": {
     "seed": "node scripts/seed-products-generate.js",
+    "access:setup": "node scripts/setup-access.mjs",
     "test": "node --test",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

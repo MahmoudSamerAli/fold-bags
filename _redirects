@@ -1,0 +1,6 @@
+# Serve the admin dashboard at /admin.
+# The dashboard now lives at admin/index.html; rewrite /admin to the directory
+# (default document) so the path works without a trailing slash and without the
+# Pages ".html -> clean URL" redirect loop. Direct /admin/index.html requests get
+# redirected to /admin/ by Pages itself, which still serves the dashboard (200).
+/admin  /admin/  200

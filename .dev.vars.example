@@ -5,3 +5,8 @@
 # admin secrets are needed by the Functions. Product/order data lives in D1,
 # which is configured via a local (git-ignored) wrangler.toml when running with
 # `wrangler pages dev`.
+#
+# Provisioning the Access application (scripts/setup-access.mjs) is a one-off
+# admin task run from your machine — put its API token in a local `.env`:
+#   CLOUDFLARE_API_TOKEN=...   # Account → Access: Apps and Policies → Edit
+#   CLOUDFLARE_ACCOUNT_ID=...  # optional; defaults to the Fold account

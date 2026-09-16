@@ -4,13 +4,13 @@ Minimal bags for the modern journey. A static storefront built with **HTML, CSS,
 
 ## Tech Stack
 
-| Layer           | Technology                                                                              |
-| --------------- | --------------------------------------------------------------------------------------- |
-| Frontend        | HTML + CSS + vanilla JS (no framework, no build step)                                   |
-| Product data    | Cloudflare D1 (served via `/api/products`), seeded from `data/products.js`              |
-| Order storage   | Cloudflare Pages Function + Cloudflare D1 (SQLite)                                      |
-| Admin dashboard | Static `admin.html` + `/api/admin/*` Functions, gated by Cloudflare Access (Zero Trust) |
-| Deployment      | Cloudflare Pages (static) + GitHub                                                      |
+| Layer           | Technology                                                                                                               |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Frontend        | HTML + CSS + vanilla JS (no framework, no build step)                                                                    |
+| Product data    | Cloudflare D1 (served via `/api/products`), seeded from `data/products.js`                                               |
+| Order storage   | Cloudflare Pages Function + Cloudflare D1 (SQLite)                                                                       |
+| Admin dashboard | Static `admin/index.html` (+ `admin.js`/`admin.css`) + `/api/admin/*` Functions, gated by Cloudflare Access (Zero Trust) |
+| Deployment      | Cloudflare Pages (static) + GitHub                                                                                       |
 
 ## Project Structure
 
@@ -25,13 +25,14 @@ fold-bags/
 ├── about.html            # About the brand
 ├── contact.html          # Contact info + form (via WhatsApp)
 ├── faq.html              # FAQ accordion
-├── admin.html            # Admin dashboard (login + orders/products/payments)
+├── admin/                # Admin dashboard (orders/products/payments)
+│   └── index.html        # Served at /admin (gated by Cloudflare Access)
+├── _redirects            # /admin → /admin/ rewrite (avoids the clean-URL loop)
 ├── 404.html              # Custom 404
 ├── data/
 │   └── products.js       # Seed catalog (used to populate D1; offline fallback)
 ├── images/               # Product images
 ├── functions/
-│   ├── admin/             # /admin → serves admin.html (gated by Cloudflare Access)
 │   ├── api/
 │   │   ├── products/      # Public: GET active products
 │   │   ├── orders/        # Public: POST (place order) + GET (recent)
@@ -40,7 +41,8 @@ fold-bags/
 │   └── ...
 ├── migrations/           # D1 schema + seed
 ├── scripts/
-│   └── seed-products-generate.js  # Catalog → seed SQL generator
+│   ├── seed-products-generate.js  # Catalog → seed SQL generator
+│   └── setup-access.mjs           # Provision the Cloudflare Access app for /admin
 ├── test/                 # node:test suite (no test dependencies)
 ├── package.json          # npm scripts (test/lint/format/seed), dev deps
 ├── eslint.config.js      # ESLint flat config (JS linting)
@@ -164,14 +166,28 @@ Open **`/admin`** to manage:
 - **Products** — add/edit/hide products. The product form supports **colors** (name + hex swatches) and **sizes** (comma-separated) in addition to name, brand, category, price, old price, stock, image, and description. Changes reflect on the storefront immediately (no redeploy).
 - **Payments** — COD collection ledger, track paid/unpaid/refunded per order.
 
-**Protection:** Access control is handled entirely by **Cloudflare Access** (Zero Trust) at the edge. The Access application guards `/admin`, `/admin.html`, and `/api/admin/*`; requests that fail Access are redirected to the Cloudflare login before any Function or asset is served. The admin Functions themselves perform **no app-level auth** — the dashboard's `Log out` button points at the Cloudflare Access logout endpoint (`https://<access-team>.cloudflareaccess.com/cdn-cgi/access/logout`).
+**Protection:** Access control is handled entirely by **Cloudflare Access** (Zero Trust) at the edge. The Access application guards `/admin`, `/admin/*`, and `/api/admin/*`; requests that fail Access are redirected to the Cloudflare login before any asset or Function is served. The admin Functions themselves perform **no app-level auth** — the dashboard's `Log out` button points at the Cloudflare Access logout endpoint (`https://fold-bags-pages.cloudflareaccess.com/cdn-cgi/access/logout`).
 
 ### Configure Cloudflare Access for the admin area
 
-1. Cloudflare dashboard → **Zero Trust** → **Access → Applications** → **Add an application** → **Self-hosted**.
-2. **Application domain:** `fold-bags.pages.dev` (or your custom domain). Add path `Include` rules for `/admin`, `/admin.html`, and `/api/admin/*`.
-3. **Policy:** `Allow`, Include the admin email(s) (e.g., `mahmoud.samer2005@gmail.com`). Session duration: 24h (or as desired).
-4. Add more admin emails by editing the policy's Include list. Only identities that pass Access can reach the dashboard or admin APIs.
+`wrangler` has no `access` command, so the Access application is provisioned through the
+Cloudflare REST API with a scoped API token:
+
+1. Create an API token at <https://dash.cloudflare.com/profile/api-tokens> with the permission
+   **Account → Access: Apps and Policies → Edit**.
+2. Run the provisioning script:
+
+   ```bash
+   CLOUDFLARE_API_TOKEN=... node scripts/setup-access.mjs
+   ```
+
+   It creates a **self-hosted** Access app for `fold-bags.pages.dev` covering `/admin`,
+   `/admin/*`, and `/api/admin/*`, with an **Allow** policy for the admin email(s) and a 24h
+   session. Re-run with `--replace` to delete and recreate a broken app. Use `--dry-run` to
+   preview, `--list` to inspect existing apps, and `--email` (repeatable) to allow more admins.
+
+3. Only identities that pass Access can reach the dashboard or admin APIs. The admin dashboard's
+   `Log out` link ends the Access session.
 
 ## Deployment (Cloudflare Pages)
 
@@ -180,7 +196,7 @@ Open **`/admin`** to manage:
 3. **Build settings:** No build command, no build output directory (leave the **Root directory** at the repo root `/`). The repo has **no `wrangler.toml`**, so Cloudflare's v2 root-directory strategy serves the static files and auto-detects the `functions/` directory. Do **not** set `wrangler.toml`'s `pages_build_output_dir` to `/` — an absolute path resolves outside the repository and fails the build.
 4. Bind the D1 database:
    - Settings → Functions → D1 database bindings → add binding named `DB`, select the `fold` database.
-5. Configure **Cloudflare Access** (Zero Trust) to guard `fold-bags.pages.dev/admin`, `/admin.html`, and `/api/admin/*` (see _Admin Dashboard → Configure Cloudflare Access_).
+5. Configure **Cloudflare Access** (Zero Trust) to guard `fold-bags.pages.dev/admin`, `/admin/*`, and `/api/admin/*` with `npm run access:setup` (see _Admin Dashboard → Configure Cloudflare Access_).
 6. Deploy. Run the three migrations (`--remote`) at least once so products and the admin tables exist. If you adopted Cloudflare Access as the sole admin gate after previously using the app password, also run the cleanup migration to drop the unused session table:
    - `wrangler d1 execute fold --remote --file=./migrations/0004_remove_admin_sessions.sql`
 

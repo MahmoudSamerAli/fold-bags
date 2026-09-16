@@ -13,6 +13,9 @@ dist
 wrangler.toml
 wrangler.json
 
+# Local backups (D1 exports, pre-refactor copies)
+backups
+
 # Logs & OS files
 *.log
 .DS_Store
