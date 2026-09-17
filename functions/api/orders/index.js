@@ -3,9 +3,8 @@
 // The server is authoritative for prices, stock, and totals: client-supplied
 // item prices and subtotal/shipping/total are ignored and recomputed here.
 import { json } from '../_lib/auth.js';
+import { computeShipping } from '../_lib/shipping.js';
 
-const FREE_SHIPPING_MIN = 1000;
-const SHIPPING_FEE = 50;
 // Minimum seconds between orders placed from the same phone number.
 const ORDER_COOLDOWN_SECONDS = 60;
 
@@ -52,6 +51,8 @@ async function createOrder(request, env) {
     return json({ error: 'Order must contain at least one item' }, 400);
   }
 
+  let priorOrders = 0;
+
   try {
     // Per-phone cooldown guard against rapid-fire submissions.
     const { results: recent } = await env.DB.prepare(
@@ -69,6 +70,14 @@ async function createOrder(request, env) {
         return json({ error: 'Too many orders from this number. Please try again shortly.' }, 429);
       }
     }
+
+    // Count the customer's existing orders (all statuses) for delivery-fee pricing.
+    const { results: countRows } = await env.DB.prepare(
+      `SELECT COUNT(*) AS cnt FROM orders WHERE replace(customer_phone, '+', '') = ?`
+    )
+      .bind(phoneKey)
+      .all();
+    priorOrders = Number(countRows?.[0]?.cnt) || 0;
   } catch (e) {
     logError('cooldown lookup failed', e);
     return json({ error: 'Could not save order' }, 500);
@@ -120,7 +129,8 @@ async function createOrder(request, env) {
     return json({ error: 'Could not save order' }, 500);
   }
 
-  const shipping = subtotal >= FREE_SHIPPING_MIN ? 0 : SHIPPING_FEE;
+  const totalQty = resolved.reduce((sum, item) => sum + item.qty, 0);
+  const shipping = computeShipping({ priorOrders, totalQty });
   const total = subtotal + shipping;
 
   try {

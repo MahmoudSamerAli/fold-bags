@@ -7,8 +7,6 @@
 /* ==================== CONFIG ==================== */
 const WHATSAPP_NUMBER = '201011433705';
 const CONTACT_PHONE = '0101143370';
-const FREE_SHIPPING_MIN = 1000;
-const SHIPPING_FEE = 50;
 
 /* ==================== THEME ==================== */
 const THEME_KEY = 'fold_theme';
@@ -154,6 +152,10 @@ function generateOrderId() {
 
 /* ==================== CART ==================== */
 const Cart = {
+  // Delivery fee for the current cart, resolved at checkout from /api/shipping
+  // (depends on the phone's prior order count). null = not yet known.
+  shipping: null,
+
   getItems() {
     try {
       return JSON.parse(localStorage.getItem('fold_cart')) || [];
@@ -218,13 +220,16 @@ const Cart = {
     return this.getItems().reduce((s, i) => s + i.price * i.qty, 0);
   },
   getShipping() {
-    return this.getSubtotal() >= FREE_SHIPPING_MIN ? 0 : SHIPPING_FEE;
+    return this.shipping === null ? null : this.shipping;
   },
   getTotal() {
-    return this.getSubtotal() + this.getShipping();
+    const shipping = this.getShipping();
+    if (shipping === null) return null;
+    return this.getSubtotal() + shipping;
   },
   clear() {
     localStorage.removeItem('fold_cart');
+    this.shipping = null;
     this.updateUI();
   },
 
@@ -286,7 +291,10 @@ const Cart = {
       </div>`;
       })
       .join('');
-    if (totalEl) totalEl.textContent = formatPrice(this.getTotal());
+    if (totalEl) {
+      const total = this.getTotal();
+      totalEl.textContent = total === null ? '—' : formatPrice(total);
+    }
   },
 
   openDrawer() {
@@ -348,9 +356,12 @@ const Cart = {
       })
       .join('');
     if (subtotalEl) subtotalEl.textContent = formatPrice(this.getSubtotal());
+    const shipOnCart = this.getShipping();
+    const totalOnCart = this.getTotal();
     if (shippingEl)
-      shippingEl.textContent = this.getShipping() === 0 ? 'Free' : formatPrice(this.getShipping());
-    if (totalEl) totalEl.textContent = formatPrice(this.getTotal());
+      shippingEl.textContent =
+        shipOnCart === null ? '—' : shipOnCart === 0 ? 'Free' : formatPrice(shipOnCart);
+    if (totalEl) totalEl.textContent = totalOnCart === null ? '—' : formatPrice(totalOnCart);
   },
 
   renderCheckoutSummary() {
@@ -381,9 +392,13 @@ const Cart = {
       })
       .join('');
     if (subtotalEl) subtotalEl.textContent = formatPrice(this.getSubtotal());
+    const shipOnCheckout = this.getShipping();
+    const totalOnCheckout = this.getTotal();
     if (shippingEl)
-      shippingEl.textContent = this.getShipping() === 0 ? 'Free' : formatPrice(this.getShipping());
-    if (totalEl) totalEl.textContent = formatPrice(this.getTotal());
+      shippingEl.textContent =
+        shipOnCheckout === null ? '—' : shipOnCheckout === 0 ? 'Free' : formatPrice(shipOnCheckout);
+    if (totalEl)
+      totalEl.textContent = totalOnCheckout === null ? '—' : formatPrice(totalOnCheckout);
   }
 };
 
@@ -499,7 +514,17 @@ function quickAdd(productId) {
 }
 
 /* ==================== WHATSAPP (COD) ==================== */
-function buildWhatsAppMessage(orderId, customerName, customerPhone, address, city, items, total) {
+function buildWhatsAppMessage(
+  orderId,
+  customerName,
+  customerPhone,
+  address,
+  city,
+  items,
+  subtotal,
+  shipping,
+  total
+) {
   const siteOrigin = location.origin || 'https://fold-bags.pages.dev';
   const itemLines = items
     .map((item, i) => {
@@ -522,8 +547,8 @@ function buildWhatsAppMessage(orderId, customerName, customerPhone, address, cit
     '*Items:*',
     itemLines,
     '',
-    `*Subtotal:* ${formatPrice(Cart.getSubtotal())}`,
-    `*Delivery:* ${Cart.getShipping() === 0 ? 'Free' : formatPrice(Cart.getShipping())}`,
+    `*Subtotal:* ${formatPrice(subtotal)}`,
+    `*Delivery:* ${shipping === 0 ? 'Free' : formatPrice(shipping)}`,
     `*Total:* ${formatPrice(total)}`
   ].join('\n');
   return message;
@@ -570,12 +595,72 @@ async function saveOrderApi(payload) {
   }
 }
 
+async function fetchShippingQuote(phone, qty) {
+  try {
+    const res = await fetch(
+      `/api/shipping?phone=${encodeURIComponent(phone)}&qty=${encodeURIComponent(qty)}`
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data && typeof data.shipping === 'number' ? data : null;
+  } catch (e) {
+    return null;
+  }
+}
+
 /* ==================== PAGE: CHECKOUT (COD only) ==================== */
 function initCheckoutPage() {
   const form = document.getElementById('checkout-form');
   const totalDisplay = document.getElementById('checkout-total-display');
   if (!form) return;
   Cart.renderCheckoutSummary();
+
+  const phoneInput = document.getElementById('cust-phone');
+  const PHONE_RE = /^(?:\+20|0)1[0-9]{9}$/;
+  let quotePhone = null;
+  let quoteTimer = null;
+
+  const updateTotal = () => {
+    if (!totalDisplay) return;
+    const total = Cart.getTotal();
+    totalDisplay.textContent = total === null ? '—' : formatPrice(total);
+  };
+
+  // Resolve the delivery fee for the entered phone. Delivery depends on the
+  // customer's prior order count, which only the server knows.
+  async function refreshQuote() {
+    const val = phoneInput ? phoneInput.value.trim() : '';
+    const qty = Cart.getCount();
+    if (!PHONE_RE.test(val) || qty === 0) {
+      Cart.shipping = null;
+      quotePhone = null;
+      Cart.renderCheckoutSummary();
+      updateTotal();
+      return;
+    }
+    const quote = await fetchShippingQuote(val, qty);
+    if (phoneInput && phoneInput.value.trim() !== val) return; // stale response
+    if (quote) {
+      Cart.shipping = quote.shipping;
+      quotePhone = val;
+    } else {
+      Cart.shipping = null;
+      quotePhone = null;
+    }
+    Cart.renderCheckoutSummary();
+    updateTotal();
+  }
+
+  if (phoneInput) {
+    phoneInput.addEventListener('input', () => {
+      clearTimeout(quoteTimer);
+      quoteTimer = setTimeout(refreshQuote, 450);
+    });
+  }
+  document.addEventListener('cart-updated', () => {
+    updateTotal();
+    if (quotePhone) refreshQuote();
+  });
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -618,6 +703,18 @@ function initCheckoutPage() {
 
     if (!valid) return;
 
+    // Make sure the delivery quote for this phone is known before submitting
+    // (a valid phone is guaranteed here). The server recomputes authoritatively.
+    const phoneVal = phone.value.trim();
+    if (Cart.shipping === null || quotePhone !== phoneVal) {
+      const quote = await fetchShippingQuote(phoneVal, Cart.getCount());
+      if (quote) {
+        Cart.shipping = quote.shipping;
+        Cart.renderCheckoutSummary();
+        updateTotal();
+      }
+    }
+
     const orderId = generateOrderId();
     const payload = {
       order_id: orderId,
@@ -654,7 +751,9 @@ function initCheckoutPage() {
       payload.address,
       payload.city,
       items,
-      serverTotal
+      saved.subtotal,
+      saved.shipping,
+      saved.total
     );
 
     Cart.clear();
@@ -662,11 +761,7 @@ function initCheckoutPage() {
     window.location.href = `confirmation.html?order=${encodeURIComponent(orderId)}&total=${serverTotal}`;
   });
 
-  const updateTotal = () => {
-    if (totalDisplay) totalDisplay.textContent = formatPrice(Cart.getTotal());
-  };
   updateTotal();
-  document.addEventListener('cart-updated', updateTotal);
 }
 
 /* ==================== PAGE: CONFIRMATION (COD) ==================== */
