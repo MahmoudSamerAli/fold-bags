@@ -131,7 +131,27 @@
                 </div>
                 <div class="form-group">
                   <label for="cust-city">City</label>
-                  <input type="text" id="cust-city" placeholder="Enter your city" />
+                  <input
+                    type="text"
+                    id="cust-city"
+                    value="Cairo"
+                    readonly
+                    style="
+                      background: var(--bg-light, #f9f7f3);
+                      color: var(--text-light, #7a7468);
+                      cursor: not-allowed;
+                    "
+                  />
+                  <small
+                    style="
+                      display: block;
+                      margin-top: 0.25rem;
+                      font-size: 0.75rem;
+                      color: var(--text-light, #7a7468);
+                    "
+                  >
+                    We currently deliver within Cairo only.
+                  </small>
                 </div>
               </div>
               <div class="form-group">

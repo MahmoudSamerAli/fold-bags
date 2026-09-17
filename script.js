@@ -499,17 +499,21 @@ function quickAdd(productId) {
 }
 
 /* ==================== WHATSAPP (COD) ==================== */
-function buildWhatsAppMessage(customerName, customerPhone, address, city, items, total) {
+function buildWhatsAppMessage(orderId, customerName, customerPhone, address, city, items, total) {
+  const siteOrigin = location.origin || 'https://fold-bags.pages.dev';
   const itemLines = items
     .map((item, i) => {
       const variant = [item.color, item.size].filter(Boolean).join(', ');
-      return `${i + 1}. ${item.name}${variant ? ' (' + variant + ')' : ''} x ${item.qty} - ${formatPrice(item.price * item.qty)}`;
+      const link = `${siteOrigin}/product.html?id=${item.id}`;
+      const name = item.name;
+      return `${i + 1}. [${name}](${link})${variant ? ' (' + variant + ')' : ''} × ${item.qty} — ${formatPrice(item.price * item.qty)}`;
     })
     .join('\n');
   const fullAddress = address + (city ? ', ' + city : '');
   const message = [
     '*New Order - Fold (Cash on Delivery)*',
     '',
+    `*Order ID:* ${orderId}`,
     `*Customer:* ${customerName}`,
     `*Phone:* ${customerPhone}`,
     `*Address:* ${fullAddress}`,
@@ -581,7 +585,6 @@ function initCheckoutPage() {
     let valid = true;
     const name = document.getElementById('cust-name');
     const phone = document.getElementById('cust-phone');
-    const city = document.getElementById('cust-city');
     const address = document.getElementById('cust-address');
 
     [name, phone, address].forEach(
@@ -620,7 +623,7 @@ function initCheckoutPage() {
       order_id: orderId,
       customer_name: name.value.trim(),
       customer_phone: phone.value.trim(),
-      city: city.value.trim(),
+      city: 'Cairo',
       address: address.value.trim(),
       payment_method: 'cod',
       items,
@@ -645,6 +648,7 @@ function initCheckoutPage() {
     sessionStorage.setItem('fold_last_order', JSON.stringify({ items, total: serverTotal }));
 
     const waMsg = buildWhatsAppMessage(
+      orderId,
       payload.customer_name,
       payload.customer_phone,
       payload.address,
