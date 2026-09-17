@@ -88,6 +88,15 @@ test('every product image file exists on disk', () => {
   }
 });
 
+test('every product images[] entries exist on disk', () => {
+  for (const p of products) {
+    const gallery = Array.isArray(p.images) && p.images.length ? p.images : [p.image];
+    for (const img of gallery) {
+      assert.ok(existsSync(join(root, img)), `${p.id} gallery image missing on disk: ${img}`);
+    }
+  }
+});
+
 test('category list includes all product categories and "all"', () => {
   const slugs = new Set(categories.map((c) => c.slug));
   assert.ok(slugs.has('all'), 'category list must include an "all" entry');

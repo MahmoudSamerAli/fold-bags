@@ -20,7 +20,8 @@ async function listProducts(context) {
     const rows = (results || []).map((r) => ({
       ...r,
       colors: safeArr(r.colors),
-      sizes: safeArr(r.sizes)
+      sizes: safeArr(r.sizes),
+      images: safeArr(r.images)
     }));
     return json({ products: rows });
   } catch (e) {
@@ -47,6 +48,7 @@ async function createProduct(request, context) {
       ? null
       : Math.max(0, Number(body.old_price) || 0);
   const image = (body.image || '').toString().trim();
+  const images = Array.isArray(body.images) ? body.images : null;
   const stock = Math.max(0, Number(body.stock) || 0);
   const description = (body.description || '').toString().trim();
   const colors = Array.isArray(body.colors) ? body.colors : [{ name: 'Default', hex: '#111111' }];
@@ -58,8 +60,8 @@ async function createProduct(request, context) {
 
   try {
     const result = await context.env.DB.prepare(
-      `INSERT INTO products (name, brand, category, price, old_price, image, colors, sizes, stock, description, active)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`
+      `INSERT INTO products (name, brand, category, price, old_price, image, images, colors, sizes, stock, description, active)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`
     )
       .bind(
         name,
@@ -68,6 +70,7 @@ async function createProduct(request, context) {
         price,
         oldPrice,
         image,
+        images ? JSON.stringify(images) : null,
         JSON.stringify(colors),
         JSON.stringify(sizes),
         stock,

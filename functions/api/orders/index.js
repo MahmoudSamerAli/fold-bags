@@ -51,8 +51,6 @@ async function createOrder(request, env) {
     return json({ error: 'Order must contain at least one item' }, 400);
   }
 
-  let priorOrders = 0;
-
   try {
     // Per-phone cooldown guard against rapid-fire submissions.
     const { results: recent } = await env.DB.prepare(
@@ -70,14 +68,6 @@ async function createOrder(request, env) {
         return json({ error: 'Too many orders from this number. Please try again shortly.' }, 429);
       }
     }
-
-    // Count the customer's existing orders (all statuses) for delivery-fee pricing.
-    const { results: countRows } = await env.DB.prepare(
-      `SELECT COUNT(*) AS cnt FROM orders WHERE replace(customer_phone, '+', '') = ?`
-    )
-      .bind(phoneKey)
-      .all();
-    priorOrders = Number(countRows?.[0]?.cnt) || 0;
   } catch (e) {
     logError('cooldown lookup failed', e);
     return json({ error: 'Could not save order' }, 500);
@@ -129,8 +119,7 @@ async function createOrder(request, env) {
     return json({ error: 'Could not save order' }, 500);
   }
 
-  const totalQty = resolved.reduce((sum, item) => sum + item.qty, 0);
-  const shipping = computeShipping({ priorOrders, totalQty });
+  const shipping = computeShipping();
   const total = subtotal + shipping;
 
   try {

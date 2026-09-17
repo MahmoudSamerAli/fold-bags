@@ -195,9 +195,26 @@
               <label>Stock *</label><input type="number" id="p-stock" min="0" value="0" required />
             </div>
             <div class="field">
-              <label>Image path</label
+              <label>Image path (cover)</label
               ><input type="text" id="p-image" placeholder="images/Example.jpeg" />
             </div>
+          </div>
+          <div class="field">
+            <label>Additional images (one per line)</label
+            ><textarea
+              id="p-images"
+              rows="3"
+              placeholder="images/Example-2.jpeg&#10;images/Example-3.jpeg"
+            ></textarea>
+            <small
+              style="
+                display: block;
+                margin-top: 0.25rem;
+                font-size: 0.75rem;
+                color: var(--text-light);
+              "
+              >Optional: extra gallery images. Cover image is used automatically.</small
+            >
           </div>
           <div class="field">
             <label>Description</label><textarea id="p-description" rows="3"></textarea>

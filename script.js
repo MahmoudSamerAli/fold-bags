@@ -152,10 +152,6 @@ function generateOrderId() {
 
 /* ==================== CART ==================== */
 const Cart = {
-  // Delivery fee for the current cart, resolved at checkout from /api/shipping
-  // (depends on the phone's prior order count). null = not yet known.
-  shipping: null,
-
   getItems() {
     try {
       return JSON.parse(localStorage.getItem('fold_cart')) || [];
@@ -220,16 +216,13 @@ const Cart = {
     return this.getItems().reduce((s, i) => s + i.price * i.qty, 0);
   },
   getShipping() {
-    return this.shipping === null ? null : this.shipping;
+    return 100;
   },
   getTotal() {
-    const shipping = this.getShipping();
-    if (shipping === null) return null;
-    return this.getSubtotal() + shipping;
+    return this.getSubtotal() + this.getShipping();
   },
   clear() {
     localStorage.removeItem('fold_cart');
-    this.shipping = null;
     this.updateUI();
   },
 
@@ -292,8 +285,7 @@ const Cart = {
       })
       .join('');
     if (totalEl) {
-      const total = this.getTotal();
-      totalEl.textContent = total === null ? '—' : formatPrice(total);
+      totalEl.textContent = formatPrice(this.getTotal());
     }
   },
 
@@ -356,12 +348,8 @@ const Cart = {
       })
       .join('');
     if (subtotalEl) subtotalEl.textContent = formatPrice(this.getSubtotal());
-    const shipOnCart = this.getShipping();
-    const totalOnCart = this.getTotal();
-    if (shippingEl)
-      shippingEl.textContent =
-        shipOnCart === null ? '—' : shipOnCart === 0 ? 'Free' : formatPrice(shipOnCart);
-    if (totalEl) totalEl.textContent = totalOnCart === null ? '—' : formatPrice(totalOnCart);
+    if (shippingEl) shippingEl.textContent = formatPrice(this.getShipping());
+    if (totalEl) totalEl.textContent = formatPrice(this.getTotal());
   },
 
   renderCheckoutSummary() {
@@ -392,13 +380,8 @@ const Cart = {
       })
       .join('');
     if (subtotalEl) subtotalEl.textContent = formatPrice(this.getSubtotal());
-    const shipOnCheckout = this.getShipping();
-    const totalOnCheckout = this.getTotal();
-    if (shippingEl)
-      shippingEl.textContent =
-        shipOnCheckout === null ? '—' : shipOnCheckout === 0 ? 'Free' : formatPrice(shipOnCheckout);
-    if (totalEl)
-      totalEl.textContent = totalOnCheckout === null ? '—' : formatPrice(totalOnCheckout);
+    if (shippingEl) shippingEl.textContent = formatPrice(this.getShipping());
+    if (totalEl) totalEl.textContent = formatPrice(this.getTotal());
   }
 };
 
@@ -595,19 +578,6 @@ async function saveOrderApi(payload) {
   }
 }
 
-async function fetchShippingQuote(phone, qty) {
-  try {
-    const res = await fetch(
-      `/api/shipping?phone=${encodeURIComponent(phone)}&qty=${encodeURIComponent(qty)}`
-    );
-    if (!res.ok) return null;
-    const data = await res.json();
-    return data && typeof data.shipping === 'number' ? data : null;
-  } catch (e) {
-    return null;
-  }
-}
-
 /* ==================== PAGE: CHECKOUT (COD only) ==================== */
 function initCheckoutPage() {
   const form = document.getElementById('checkout-form');
@@ -615,52 +585,10 @@ function initCheckoutPage() {
   if (!form) return;
   Cart.renderCheckoutSummary();
 
-  const phoneInput = document.getElementById('cust-phone');
-  const PHONE_RE = /^(?:\+20|0)1[0-9]{9}$/;
-  let quotePhone = null;
-  let quoteTimer = null;
-
   const updateTotal = () => {
     if (!totalDisplay) return;
-    const total = Cart.getTotal();
-    totalDisplay.textContent = total === null ? '—' : formatPrice(total);
+    totalDisplay.textContent = formatPrice(Cart.getTotal());
   };
-
-  // Resolve the delivery fee for the entered phone. Delivery depends on the
-  // customer's prior order count, which only the server knows.
-  async function refreshQuote() {
-    const val = phoneInput ? phoneInput.value.trim() : '';
-    const qty = Cart.getCount();
-    if (!PHONE_RE.test(val) || qty === 0) {
-      Cart.shipping = null;
-      quotePhone = null;
-      Cart.renderCheckoutSummary();
-      updateTotal();
-      return;
-    }
-    const quote = await fetchShippingQuote(val, qty);
-    if (phoneInput && phoneInput.value.trim() !== val) return; // stale response
-    if (quote) {
-      Cart.shipping = quote.shipping;
-      quotePhone = val;
-    } else {
-      Cart.shipping = null;
-      quotePhone = null;
-    }
-    Cart.renderCheckoutSummary();
-    updateTotal();
-  }
-
-  if (phoneInput) {
-    phoneInput.addEventListener('input', () => {
-      clearTimeout(quoteTimer);
-      quoteTimer = setTimeout(refreshQuote, 450);
-    });
-  }
-  document.addEventListener('cart-updated', () => {
-    updateTotal();
-    if (quotePhone) refreshQuote();
-  });
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -702,18 +630,6 @@ function initCheckoutPage() {
     }
 
     if (!valid) return;
-
-    // Make sure the delivery quote for this phone is known before submitting
-    // (a valid phone is guaranteed here). The server recomputes authoritatively.
-    const phoneVal = phone.value.trim();
-    if (Cart.shipping === null || quotePhone !== phoneVal) {
-      const quote = await fetchShippingQuote(phoneVal, Cart.getCount());
-      if (quote) {
-        Cart.shipping = quote.shipping;
-        Cart.renderCheckoutSummary();
-        updateTotal();
-      }
-    }
 
     const orderId = generateOrderId();
     const payload = {
@@ -908,7 +824,14 @@ function initProductPage() {
   let quantity = 1;
 
   function renderProduct() {
-    const imagesHtml = `<img src="${esc(product.image)}" alt="${esc(product.name)}" class="product-thumbnail active" onclick="switchImage(this, '${escJS(product.image)}')">`;
+    const gallery =
+      Array.isArray(product.images) && product.images.length ? product.images : [product.image];
+    const imagesHtml = gallery
+      .map(
+        (img, idx) =>
+          `<img src="${esc(img)}" alt="${esc(product.name)}" class="product-thumbnail${idx === 0 ? ' active' : ''}" onclick="switchImage(this, '${escJS(img)}')">`
+      )
+      .join('');
     const colorsHtml = product.colors
       .map(
         (c) =>
@@ -925,7 +848,7 @@ function initProductPage() {
     container.innerHTML = `
       <div class="product-images">
         <div class="product-main-image" onclick="openLightbox(document.getElementById('main-image').src)">
-          <img src="${esc(product.image)}" alt="${esc(product.name)}" id="main-image">
+          <img src="${esc(gallery[0])}" alt="${esc(product.name)}" id="main-image">
         </div>
         <div class="product-thumbnails"></div>
       </div>

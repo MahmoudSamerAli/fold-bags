@@ -22,10 +22,11 @@ const lines = ['-- Fold — seed products from data/products.js (INSERT OR REPLA
 for (const p of products) {
   const colors = q(JSON.stringify(p.colors || []));
   const sizes = q(JSON.stringify(p.sizes || ['OS']));
+  const images = q(JSON.stringify(p.images || [p.image]));
   lines.push(
-    `INSERT OR REPLACE INTO products (id, name, brand, category, price, old_price, image, colors, sizes, stock, description, active) VALUES (` +
+    `INSERT OR REPLACE INTO products (id, name, brand, category, price, old_price, image, images, colors, sizes, stock, description, active) VALUES (` +
       `${Number(p.id)}, ${q(p.name)}, ${q(p.brand || '')}, ${q(p.category)}, ${Number(p.price)}, ` +
-      `${p.old_price == null ? 'NULL' : Number(p.old_price)}, ${q(p.image || '')}, ${colors}, ${sizes}, ` +
+      `${p.old_price == null ? 'NULL' : Number(p.old_price)}, ${q(p.image || '')}, ${images}, ${colors}, ${sizes}, ` +
       `${Number(p.stock) || 0}, ${q(p.description || '')}, 1);`
   );
 }

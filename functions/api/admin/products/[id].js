@@ -12,6 +12,7 @@ const EDITABLE = [
   'price',
   'old_price',
   'image',
+  'images',
   'colors',
   'sizes',
   'stock',
@@ -50,7 +51,7 @@ async function updateProduct(request, env, id) {
       value = Math.max(0, Number(value) || 0);
     } else if (key === 'active') {
       value = value ? 1 : 0;
-    } else if (key === 'colors' || key === 'sizes') {
+    } else if (key === 'colors' || key === 'sizes' || key === 'images') {
       value = JSON.stringify(Array.isArray(value) ? value : []);
     } else if (key === 'category') {
       if (!CATEGORIES.includes(value)) return json({ error: 'Invalid category' }, 400);

@@ -10,7 +10,7 @@ export async function onRequest(context) {
 
   try {
     const { results } = await context.env.DB.prepare(
-      `SELECT id, name, brand, category, price, old_price, image, colors, sizes, stock, description FROM products WHERE active = 1 ORDER BY id ASC`
+      `SELECT id, name, brand, category, price, old_price, image, images, colors, sizes, stock, description FROM products WHERE active = 1 ORDER BY id ASC`
     ).all();
 
     const products = (results || []).map((r) => ({
@@ -21,6 +21,7 @@ export async function onRequest(context) {
       price: r.price,
       old_price: r.old_price,
       image: r.image,
+      images: safeArr(r.images),
       colors: safeArr(r.colors),
       sizes: safeArr(r.sizes),
       stock: r.stock,

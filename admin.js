@@ -295,6 +295,8 @@ function openProductModal(p) {
   document.getElementById('p-old-price').value = p && p.old_price ? p.old_price : '';
   document.getElementById('p-stock').value = p ? p.stock : 0;
   document.getElementById('p-image').value = p ? p.image : '';
+  document.getElementById('p-images').value =
+    p && Array.isArray(p.images) ? p.images.slice(1).join('\n') : '';
   document.getElementById('p-description').value = p ? p.description : '';
   editingColors = p && Array.isArray(p.colors) ? p.colors.map((c) => ({ ...c })) : [];
   document.getElementById('p-sizes').value =
@@ -310,6 +312,15 @@ function closeProductModal() {
 async function saveProduct(e) {
   e.preventDefault();
   const id = document.getElementById('p-id').value;
+  const imagesText = document.getElementById('p-images').value.trim();
+  const extraImages = imagesText
+    ? imagesText
+        .split('\n')
+        .map((s) => s.trim())
+        .filter(Boolean)
+    : [];
+  const coverImage = document.getElementById('p-image').value.trim();
+  const images = coverImage ? [coverImage, ...extraImages] : extraImages;
   const payload = {
     name: document.getElementById('p-name').value.trim(),
     brand: document.getElementById('p-brand').value.trim(),
@@ -320,7 +331,8 @@ async function saveProduct(e) {
         ? null
         : Number(document.getElementById('p-old-price').value),
     stock: Number(document.getElementById('p-stock').value || 0),
-    image: document.getElementById('p-image').value.trim(),
+    image: coverImage,
+    images: images.length ? JSON.stringify(images) : null,
     description: document.getElementById('p-description').value.trim(),
     colors: editingColors.length ? editingColors : [{ name: 'Default', hex: '#111111' }],
     sizes: document
