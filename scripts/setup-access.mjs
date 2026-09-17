@@ -20,6 +20,8 @@
 //   --email <email>     Admin email allowed by the policy (repeatable).
 //                       Default: mahmoud.samer2005@gmail.com.
 //   --session <dur>     Access session duration (default: 24h).
+//   --team <team>       Access team name for the logout URL
+//                       (default: fold-bags-pages).
 //   --replace           Delete any existing Access app for the hostname before
 //                       creating a fresh one (use to repair a broken app).
 //   --list              Only list existing Access apps for the account and exit.
@@ -34,6 +36,7 @@ const API_BASE = 'https://api.cloudflare.com/client/v4';
 const DEFAULT_ACCOUNT = '6578a193085d3cc290c7e31a8493fa36';
 const DEFAULT_HOSTNAME = 'fold-bags.pages.dev';
 const DEFAULT_EMAIL = 'mahmoud.samer2005@gmail.com';
+const DEFAULT_TEAM = 'fold-bags-pages';
 const APP_NAME = 'Fold Admin';
 const PATHS = ['/admin', '/admin/*', '/api/admin/*'];
 
@@ -56,6 +59,7 @@ function parseArgs(argv) {
     else if (a === '--hostname') opts.hostname = argv[++i];
     else if (a === '--email') opts.emails.push(argv[++i]);
     else if (a === '--session') opts.session = argv[++i];
+    else if (a === '--team') opts.team = argv[++i];
     else if (a === '--replace') opts.replace = true;
     else if (a === '--list') opts.list = true;
     else if (a === '--dry-run') opts.dryRun = true;
@@ -74,6 +78,7 @@ function usage() {
       '  --hostname <host>  Hostname to protect (default: fold-bags.pages.dev)',
       '  --email <email>    Allowed admin email (repeatable)',
       '  --session <dur>    Session duration (default: 24h)',
+      '  --team <team>      Access team for logout URL (default: fold-bags-pages)',
       '  --replace          Delete an existing app for the hostname, then recreate',
       '  --list             List existing Access apps and exit',
       '  --dry-run          Print the payload without applying it',
@@ -128,7 +133,6 @@ function buildPayload({ hostname, emails, session }) {
     self_hosted_domains: uris,
     destinations: uris.map((uri) => ({ type: 'public', uri })),
     session_duration: session,
-    auto_redirect_to_identity: true,
     app_launcher_visible: false,
     skip_interstitial: true,
     policies: [
@@ -152,6 +156,7 @@ async function main() {
   const hostname = opts.hostname || DEFAULT_HOSTNAME;
   const emails = opts.emails.length ? opts.emails : [DEFAULT_EMAIL];
   const session = opts.session || '24h';
+  const team = opts.team || DEFAULT_TEAM;
 
   if (!token) {
     console.error(
@@ -199,9 +204,7 @@ async function main() {
   console.log(`✓ Created "${app.name}" (${app.id})`);
   console.log(`  Domain(s): ${appHosts(app).join(', ') || hostname}`);
   console.log('\nAdmin access is now gated by Cloudflare Access.');
-  console.log(
-    `Log out URL: https://${hostname.replace(/\./g, '-')}.cloudflareaccess.com/cdn-cgi/access/logout`
-  );
+  console.log(`Log out URL: https://${team}.cloudflareaccess.com/cdn-cgi/access/logout`);
 }
 
 main().catch((err) => {
