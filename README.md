@@ -231,7 +231,6 @@ Each seed product:
 ## Contact
 
 - Phone: 0101143370
-- Email: mahmoud.samer2005@gmail.com
 - Location: Cairo, Egypt
 
 > The phone number is centralized in `script.js` (`CONTACT_PHONE`) and injected into every page footer / the contact page via `<p data-phone>`, keeping the displayed number in sync with the WhatsApp order line (`WHATSAPP_NUMBER`).
